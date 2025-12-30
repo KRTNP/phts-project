@@ -7,7 +7,6 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import '../types/express.js';
 import passport from 'passport';
 import { UserRole, ApiResponse } from '../types/auth.js';
 

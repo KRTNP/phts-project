@@ -11,7 +11,6 @@ import { Request } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import '../types/express.js';
 
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);

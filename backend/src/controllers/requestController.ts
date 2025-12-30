@@ -7,7 +7,6 @@
  */
 
 import { Request, Response } from 'express';
-import '../types/express.js';
 import { ApiResponse } from '../types/auth.js';
 import {
   RequestType,

@@ -7,7 +7,6 @@
  */
 
 import { Request, Response } from 'express';
-import '../types/express.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
