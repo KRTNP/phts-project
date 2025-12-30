@@ -45,7 +45,7 @@ export async function createRequest(
       `INSERT INTO pts_requests
        (user_id, request_type, status, current_step, submission_data)
        VALUES (?, ?, ?, ?, ?)`,
-      [userId, requestType, RequestStatus.DRAFT, 0, JSON.stringify(submissionData)]
+      [userId, requestType, RequestStatus.DRAFT, 1, JSON.stringify(submissionData)]
     );
 
     const requestId = result.insertId;
@@ -56,13 +56,13 @@ export async function createRequest(
       for (const file of files) {
         const [attachResult] = await connection.execute<ResultSetHeader>(
           `INSERT INTO pts_attachments
-           (request_id, file_type, file_name, file_path, file_size, mime_type)
+           (request_id, file_type, file_path, original_filename, file_size, mime_type)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [
             requestId,
             FileType.OTHER, // Default type, can be enhanced later
-            file.originalname,
             file.path,
+            file.originalname,
             file.size,
             file.mimetype,
           ]
@@ -72,8 +72,8 @@ export async function createRequest(
           attachment_id: attachResult.insertId,
           request_id: requestId,
           file_type: FileType.OTHER,
-          file_name: file.originalname,
           file_path: file.path,
+          original_filename: file.originalname,
           file_size: file.size,
           mime_type: file.mimetype,
           uploaded_at: new Date(),
@@ -139,7 +139,7 @@ export async function submitRequest(
     // Update to PENDING and set current_step to 1
     await connection.execute(
       `UPDATE pts_requests
-       SET status = ?, current_step = ?, submitted_at = NOW(), updated_at = NOW()
+       SET status = ?, current_step = ?, updated_at = NOW()
        WHERE request_id = ?`,
       [RequestStatus.PENDING, 1, requestId]
     );
@@ -147,9 +147,9 @@ export async function submitRequest(
     // Log SUBMIT action
     await connection.execute(
       `INSERT INTO pts_request_actions
-       (request_id, actor_id, action_type, from_step, to_step)
+       (request_id, actor_id, step_no, action, comment)
        VALUES (?, ?, ?, ?, ?)`,
-      [requestId, userId, ActionType.SUBMIT, 0, 1]
+      [requestId, userId, 1, ActionType.SUBMIT, null]
     );
 
     await connection.commit();
@@ -185,9 +185,10 @@ export async function getMyRequests(userId: number): Promise<RequestWithDetails[
     [userId]
   );
 
+  const requestRows = Array.isArray(requests) ? (requests as PTSRequest[]) : [];
   const requestsWithDetails: RequestWithDetails[] = [];
 
-  for (const request of requests as PTSRequest[]) {
+  for (const request of requestRows) {
     const details = await getRequestDetails(request.request_id);
     requestsWithDetails.push(details);
   }
@@ -214,13 +215,14 @@ export async function getPendingForApprover(userRole: string): Promise<RequestWi
      FROM pts_requests r
      JOIN users u ON r.user_id = u.user_id
      WHERE r.status = ? AND r.current_step = ?
-     ORDER BY r.submitted_at ASC`,
+     ORDER BY r.created_at ASC`,
     [RequestStatus.PENDING, stepNo]
   );
 
+  const requestRows = Array.isArray(requests) ? (requests as any[]) : [];
   const requestsWithDetails: RequestWithDetails[] = [];
 
-  for (const request of requests as any[]) {
+  for (const request of requestRows) {
     const details = await getRequestDetails(request.request_id);
     details.requester = {
       citizen_id: request.requester_citizen_id,
@@ -331,9 +333,9 @@ export async function approveRequest(
     // Log APPROVE action
     await connection.execute(
       `INSERT INTO pts_request_actions
-       (request_id, actor_id, action_type, from_step, to_step, comment)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [requestId, actorId, ActionType.APPROVE, currentStep, nextStep, comment || null]
+       (request_id, actor_id, step_no, action, comment)
+       VALUES (?, ?, ?, ?, ?)`,
+      [requestId, actorId, currentStep, ActionType.APPROVE, comment || null]
     );
 
     // Check if this is the final approval step
@@ -427,9 +429,9 @@ export async function rejectRequest(
     // Log REJECT action
     await connection.execute(
       `INSERT INTO pts_request_actions
-       (request_id, actor_id, action_type, from_step, to_step, comment)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [requestId, actorId, ActionType.REJECT, currentStep, currentStep, comment]
+       (request_id, actor_id, step_no, action, comment)
+       VALUES (?, ?, ?, ?, ?)`,
+      [requestId, actorId, currentStep, ActionType.REJECT, comment]
     );
 
     // Update status to REJECTED
@@ -518,9 +520,9 @@ export async function returnRequest(
     // Log RETURN action
     await connection.execute(
       `INSERT INTO pts_request_actions
-       (request_id, actor_id, action_type, from_step, to_step, comment)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [requestId, actorId, ActionType.RETURN, currentStep, previousStep, comment]
+       (request_id, actor_id, step_no, action, comment)
+       VALUES (?, ?, ?, ?, ?)`,
+      [requestId, actorId, currentStep, ActionType.RETURN, comment]
     );
 
     // Update to RETURNED status and decrement step
@@ -579,7 +581,7 @@ async function getRequestDetails(requestId: number): Promise<RequestWithDetails>
      FROM pts_request_actions a
      JOIN users u ON a.actor_id = u.user_id
      WHERE a.request_id = ?
-     ORDER BY a.created_at ASC`,
+     ORDER BY a.action_date ASC`,
     [requestId]
   );
 
@@ -587,11 +589,14 @@ async function getRequestDetails(requestId: number): Promise<RequestWithDetails>
     action_id: action.action_id,
     request_id: action.request_id,
     actor_id: action.actor_id,
-    action_type: action.action_type,
-    from_step: action.from_step,
-    to_step: action.to_step,
+    action: action.action,
+    action_type: action.action, // alias for frontend
+    step_no: action.step_no,
+    from_step: action.step_no,
+    to_step: action.step_no,
     comment: action.comment,
-    created_at: action.created_at,
+    action_date: action.action_date,
+    created_at: action.action_date,
     actor: {
       citizen_id: action.actor_citizen_id,
       role: action.actor_role,
@@ -600,7 +605,17 @@ async function getRequestDetails(requestId: number): Promise<RequestWithDetails>
 
   return {
     ...request,
-    attachments: attachments as RequestAttachment[],
+    attachments: (attachments as any[]).map((att) => ({
+      attachment_id: att.attachment_id,
+      request_id: att.request_id,
+      file_type: att.file_type,
+      file_path: att.file_path,
+      original_filename: att.original_filename,
+      file_name: att.original_filename, // alias for frontend
+      file_size: att.file_size,
+      mime_type: att.mime_type,
+      uploaded_at: att.uploaded_at,
+    })) as RequestAttachment[],
     actions: actionsWithActor,
   };
 }

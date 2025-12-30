@@ -1,99 +1,162 @@
 /**
  * PHTS System - Department Head Dashboard
  *
- * Dashboard for department heads (HEAD_DEPT role)
+ * Dashboard for HEAD_DEPT role - Step 1 approver
  */
 
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Box, Card, CardContent, Typography, Stack } from '@mui/material';
-import { AssignmentTurnedIn, PendingActions, People } from '@mui/icons-material';
+import {
+  Stack,
+  Typography,
+  Card,
+  CardContent,
+  Snackbar,
+  Alert,
+  Box,
+  Chip,
+} from '@mui/material';
+import { Assignment } from '@mui/icons-material';
+import ApprovalList from '@/components/requests/ApprovalList';
+import { RequestWithDetails } from '@/types/request.types';
+import * as requestService from '@/services/requestService';
 
 export default function ApproverDashboard() {
+  const [requests, setRequests] = useState<RequestWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const fetchPendingRequests = async () => {
+    try {
+      setLoading(true);
+      const data = await requestService.getPendingRequests();
+      setRequests(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูล');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingRequests();
+  }, []);
+
+  const handleApprove = async (requestId: number, comment?: string) => {
+    try {
+      await requestService.approveRequest(requestId, comment);
+      setToast({
+        open: true,
+        message: 'อนุมัติคำขอสำเร็จ',
+        severity: 'success',
+      });
+      await fetchPendingRequests();
+    } catch (err: any) {
+      throw new Error(err.message || 'เกิดข้อผิดพลาดในการอนุมัติคำขอ');
+    }
+  };
+
+  const handleReject = async (requestId: number, comment: string) => {
+    try {
+      await requestService.rejectRequest(requestId, comment);
+      setToast({
+        open: true,
+        message: 'ปฏิเสธคำขอสำเร็จ',
+        severity: 'success',
+      });
+      await fetchPendingRequests();
+    } catch (err: any) {
+      throw new Error(err.message || 'เกิดข้อผิดพลาดในการปฏิเสธคำขอ');
+    }
+  };
+
+  const handleReturn = async (requestId: number, comment: string) => {
+    try {
+      await requestService.returnRequest(requestId, comment);
+      setToast({
+        open: true,
+        message: 'ส่งคำขอกลับสำเร็จ',
+        severity: 'success',
+      });
+      await fetchPendingRequests();
+    } catch (err: any) {
+      throw new Error(err.message || 'เกิดข้อผิดพลาดในการส่งคำขอกลับ');
+    }
+  };
+
   return (
     <DashboardLayout title="แดชบอร์ดหัวหน้าแผนก (Head of Department)">
       <Stack spacing={4}>
+        {/* Header */}
         <Box>
           <Typography variant="h4" fontWeight={600} gutterBottom>
-            ยินดีต้อนรับ หัวหน้าแผนก
+            รายการคำขอรออนุมัติ
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            จัดการและอนุมัติคำขอของบุคลากรในแผนก
+            คำขอที่รอการพิจารณาจากหัวหน้าแผนก (ขั้นตอนที่ 1)
           </Typography>
         </Box>
 
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            },
-            gap: 3,
-          }}
-        >
-          <Card>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <PendingActions sx={{ fontSize: 40, color: 'warning.main' }} />
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    รออนุมัติ
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    คำขอที่รอการพิจารณา
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <AssignmentTurnedIn sx={{ fontSize: 40, color: 'success.main' }} />
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    อนุมัติแล้ว
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    คำขอที่ผ่านการอนุมัติ
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <People sx={{ fontSize: 40, color: 'primary.main' }} />
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    บุคลากรในแผนก
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    จัดการข้อมูลบุคลากร
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-
+        {/* Stats Card */}
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              สิทธิ์การใช้งาน
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ในฐานะหัวหน้าแผนก คุณสามารถอนุมัติคำขอของบุคลากรในแผนกได้
-            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Assignment sx={{ fontSize: 40, color: 'warning.main' }} />
+              <Box>
+                <Typography variant="h6" fontWeight={600}>
+                  คำขอรอดำเนินการ
+                </Typography>
+                <Box mt={1}>
+                  <Chip
+                    label={`${requests.length} รายการ`}
+                    color="warning"
+                    size="small"
+                  />
+                </Box>
+              </Box>
+            </Stack>
           </CardContent>
         </Card>
+
+        {/* Approval List */}
+        <ApprovalList
+          requests={requests}
+          loading={loading}
+          error={error}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onReturn={handleReturn}
+          onRefresh={fetchPendingRequests}
+        />
       </Stack>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={6000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setToast({ ...toast, open: false })}
+          severity={toast.severity}
+          variant="filled"
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </DashboardLayout>
   );
 }

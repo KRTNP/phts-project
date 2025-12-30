@@ -6,11 +6,51 @@
 
 'use client';
 
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Box, Card, CardContent, Typography, Stack } from '@mui/material';
-import { Person, RequestPage, Payment } from '@mui/icons-material';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Button,
+  Divider,
+} from '@mui/material';
+import { Person, RequestPage, Payment, Add } from '@mui/icons-material';
+import RequestStatusTable from '@/components/requests/RequestStatusTable';
+import { RequestWithDetails } from '@/types/request.types';
+import * as requestService from '@/services/requestService';
 
 export default function UserDashboard() {
+  const router = useRouter();
+  const [requests, setRequests] = useState<RequestWithDetails[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+
+  // Fetch user's requests on mount
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setLoadingRequests(true);
+        const data = await requestService.getMyRequests();
+        setRequests(data);
+        setRequestsError(null);
+      } catch (error: any) {
+        setRequestsError(error.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลคำขอ');
+      } finally {
+        setLoadingRequests(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  const handleNewRequest = () => {
+    router.push('/dashboard/user/request');
+  };
+
   return (
     <DashboardLayout title="แดชบอร์ดบุคลากร (User Dashboard)">
       <Stack spacing={4}>
@@ -61,7 +101,7 @@ export default function UserDashboard() {
                     คำขอของฉัน
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    ติดตามสถานะคำขอ
+                    {requests.length} รายการ
                   </Typography>
                 </Box>
               </Stack>
@@ -85,19 +125,37 @@ export default function UserDashboard() {
           </Card>
         </Box>
 
-        {/* Main Content */}
+        {/* My Requests Section */}
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              การใช้งานระบบ
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              หน้าจอนี้เป็นหน้าแดชบอร์ดสำหรับบุคลากรทั่วไป
-              คุณสามารถดูข้อมูลส่วนตัว ยื่นคำขอ และติดตามสถานะได้จากเมนูด้านบน
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ระบบจะพัฒนาเพิ่มเติมในเฟสถัดไป
-            </Typography>
+            <Stack spacing={2}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                flexWrap="wrap"
+                gap={2}
+              >
+                <Typography variant="h6" fontWeight={600}>
+                  คำขอของฉัน
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleNewRequest}
+                >
+                  ยื่นคำขอใหม่
+                </Button>
+              </Box>
+
+              <Divider />
+
+              <RequestStatusTable
+                requests={requests}
+                loading={loadingRequests}
+                error={requestsError}
+              />
+            </Stack>
           </CardContent>
         </Card>
       </Stack>

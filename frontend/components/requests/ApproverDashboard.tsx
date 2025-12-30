@@ -1,13 +1,12 @@
 /**
- * PHTS System - PTS Officer Dashboard
+ * PHTS System - Reusable Approver Dashboard Component
  *
- * Dashboard for PTS_OFFICER role - Step 2 approver
+ * Shared component for all approver roles
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
   Stack,
   Typography,
@@ -19,11 +18,21 @@ import {
   Chip,
 } from '@mui/material';
 import { Assignment } from '@mui/icons-material';
-import ApprovalList from '@/components/requests/ApprovalList';
+import ApprovalList from './ApprovalList';
 import { RequestWithDetails } from '@/types/request.types';
 import * as requestService from '@/services/requestService';
 
-export default function OfficerDashboard() {
+interface ApproverDashboardContentProps {
+  title: string;
+  subtitle: string;
+  stepNumber: number;
+}
+
+export default function ApproverDashboardContent({
+  title,
+  subtitle,
+  stepNumber,
+}: ApproverDashboardContentProps) {
   const [requests, setRequests] = useState<RequestWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,15 +106,15 @@ export default function OfficerDashboard() {
   };
 
   return (
-    <DashboardLayout title="แดชบอร์ดเจ้าหน้าที่ PTS (PTS Officer)">
+    <>
       <Stack spacing={4}>
         {/* Header */}
         <Box>
           <Typography variant="h4" fontWeight={600} gutterBottom>
-            รายการคำขอรออนุมัติ
+            {title}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            คำขอที่รอการพิจารณาจากเจ้าหน้าที่ พ.ต.ส. (ขั้นตอนที่ 2)
+            {subtitle} (ขั้นตอนที่ {stepNumber})
           </Typography>
         </Box>
 
@@ -157,6 +166,6 @@ export default function OfficerDashboard() {
           {toast.message}
         </Alert>
       </Snackbar>
-    </DashboardLayout>
+    </>
   );
 }

@@ -40,6 +40,14 @@ export interface ApiError {
   error?: string;
 }
 
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  token?: string;
+}
+
 // Role display names (Thai + English)
 export const ROLE_NAMES: Record<UserRole, string> = {
   [UserRole.USER]: 'บุคลากรทั่วไป (General Staff)',

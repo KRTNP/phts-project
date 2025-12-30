@@ -1,9 +1,8 @@
 /**
- * PHTS System - Request Management Types
+ * PHTS System - Request Management Types (Frontend)
  *
  * Type definitions for PTS request workflow and management
- *
- * Date: 2025-12-30
+ * Mirrors backend types for type safety across the stack
  */
 
 /**
@@ -49,7 +48,6 @@ export enum FileType {
 
 /**
  * Step to Role mapping
- * Defines which role is responsible for approval at each workflow step
  */
 export const STEP_ROLE_MAP: Record<number, string> = {
   1: 'HEAD_DEPT',
@@ -60,8 +58,7 @@ export const STEP_ROLE_MAP: Record<number, string> = {
 };
 
 /**
- * Role to Step mapping (reverse)
- * Maps user roles to their corresponding approval step number
+ * Role to Step mapping
  */
 export const ROLE_STEP_MAP: Record<string, number> = {
   HEAD_DEPT: 1,
@@ -72,7 +69,7 @@ export const ROLE_STEP_MAP: Record<string, number> = {
 };
 
 /**
- * PTS Request entity from database
+ * PTS Request entity
  */
 export interface PTSRequest {
   request_id: number;
@@ -80,10 +77,10 @@ export interface PTSRequest {
   request_type: RequestType;
   status: RequestStatus;
   current_step: number;
-  submission_data: any; // JSON data specific to request type
-  created_at: Date;
-  updated_at: Date;
-  submitted_at?: Date | null;
+  submission_data: any;
+  created_at: Date | string;
+  updated_at: Date | string;
+  submitted_at: Date | string | null;
 }
 
 /**
@@ -93,16 +90,11 @@ export interface RequestAction {
   action_id: number;
   request_id: number;
   actor_id: number;
-  // Stored columns
-  action: ActionType;
-  step_no: number;
+  action_type: ActionType;
+  from_step: number;
+  to_step: number;
   comment: string | null;
-  action_date: Date;
-  // API-friendly aliases for frontend compatibility
-  action_type?: ActionType;
-  from_step?: number;
-  to_step?: number;
-  created_at?: Date;
+  created_at: Date | string;
 }
 
 /**
@@ -112,12 +104,11 @@ export interface RequestAttachment {
   attachment_id: number;
   request_id: number;
   file_type: FileType;
-  original_filename: string;
-  file_name?: string;
+  file_name: string;
   file_path: string;
   file_size: number;
   mime_type: string;
-  uploaded_at: Date;
+  uploaded_at: Date | string;
 }
 
 /**
@@ -148,57 +139,37 @@ export interface RequestActionWithActor extends RequestAction {
 export interface CreateRequestDTO {
   request_type: RequestType;
   submission_data: any;
+  files?: File[];
 }
 
 /**
- * DTO for submitting a draft request
+ * Request type labels (Thai)
  */
-export interface SubmitRequestDTO {
-  requestId: number;
-}
+export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
+  [RequestType.NEW_ENTRY]: 'ขอรับค่าตอบแทนใหม่',
+  [RequestType.EDIT_INFO]: 'แก้ไขข้อมูล',
+  [RequestType.RATE_CHANGE]: 'เปลี่ยนแปลงอัตรา',
+};
 
 /**
- * DTO for approving a request
+ * Request status labels (Thai)
  */
-export interface ApproveRequestDTO {
-  comment?: string;
-}
+export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
+  [RequestStatus.DRAFT]: 'แบบร่าง',
+  [RequestStatus.PENDING]: 'รอดำเนินการ',
+  [RequestStatus.APPROVED]: 'อนุมัติแล้ว',
+  [RequestStatus.REJECTED]: 'ไม่อนุมัติ',
+  [RequestStatus.CANCELLED]: 'ยกเลิก',
+  [RequestStatus.RETURNED]: 'ส่งกลับแก้ไข',
+};
 
 /**
- * DTO for rejecting a request
+ * Step labels (Thai)
  */
-export interface RejectRequestDTO {
-  comment: string;
-}
-
-/**
- * DTO for returning a request to previous step
- */
-export interface ReturnRequestDTO {
-  comment: string;
-}
-
-/**
- * Filters for querying requests
- */
-export interface RequestFilters {
-  status?: RequestStatus;
-  request_type?: RequestType;
-  from_date?: Date;
-  to_date?: Date;
-  limit?: number;
-  offset?: number;
-}
-
-/**
- * Paginated result wrapper
- */
-export interface PaginatedResult<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-}
+export const STEP_LABELS: Record<number, string> = {
+  1: 'หัวหน้าแผนก',
+  2: 'เจ้าหน้าที่ พ.ต.ส.',
+  3: 'หัวหน้าฝ่ายทรัพยากรบุคคล',
+  4: 'ผู้อำนวยการโรงพยาบาล',
+  5: 'หัวหน้าฝ่ายการเงิน',
+};
