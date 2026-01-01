@@ -41,7 +41,8 @@ import {
 } from '@mui/icons-material';
 import { RequestWithDetails, REQUEST_TYPE_LABELS, STEP_LABELS } from '@/types/request.types';
 import StatusChip from '@/components/common/StatusChip';
-import * as requestService from '@/services/requestService';
+import * as requestApi from '@/lib/api/requestApi';
+import { useRoleAwareBack } from '@/lib/navigation';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 
@@ -53,6 +54,7 @@ export default function RequestDetailPage() {
   const [request, setRequest] = useState<RequestWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { goBack, fallbackPath } = useRoleAwareBack();
 
   useEffect(() => {
     if (!requestId || isNaN(requestId)) {
@@ -64,7 +66,7 @@ export default function RequestDetailPage() {
     const fetchRequest = async () => {
       try {
         setLoading(true);
-        const data = await requestService.getRequestById(requestId);
+        const data = await requestApi.getRequestById(requestId);
         setRequest(data);
         setError(null);
       } catch (err: any) {
@@ -88,7 +90,7 @@ export default function RequestDetailPage() {
   };
 
   const handleBack = () => {
-    router.push('/dashboard/user');
+    goBack();
   };
 
   if (loading) {

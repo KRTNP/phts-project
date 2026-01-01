@@ -28,6 +28,7 @@ interface FileUploadAreaProps {
   maxFiles?: number;
   maxSizeMB?: number;
   acceptedTypes?: string[];
+  showList?: boolean;
 }
 
 const DEFAULT_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
@@ -39,6 +40,7 @@ export default function FileUploadArea({
   maxFiles = 5,
   maxSizeMB = DEFAULT_MAX_SIZE_MB,
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
+  showList = true,
 }: FileUploadAreaProps) {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -186,7 +188,7 @@ export default function FileUploadArea({
       )}
 
       {/* File List */}
-      {files.length > 0 && (
+      {showList && files.length > 0 && (
         <Stack spacing={1} sx={{ mt: 2 }}>
           <Typography variant="subtitle2" color="text.secondary">
             ไฟล์ที่เลือก ({files.length}/{maxFiles})

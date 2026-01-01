@@ -21,7 +21,7 @@ ORDER BY ORDINAL_POSITION;
 
 -- Expected: Should see 15 columns including the 7 new ones:
 -- personnel_type, position_number, department_group, main_duty,
--- work_attributes, requested_amount, effective_date
+-- work_attributes, applicant_signature, requested_amount, effective_date
 
 -- ============================================
 -- 2. Verify request_type ENUM values
@@ -74,7 +74,7 @@ FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = 'phts_system'
   AND TABLE_NAME = 'pts_requests';
 
--- Expected: 15 columns (8 original + 7 new)
+-- Expected: 16 columns (8 original + 8 new including applicant_signature)
 
 -- ============================================
 -- 6. Check for NULL values in new columns
@@ -86,6 +86,7 @@ SELECT
   SUM(CASE WHEN department_group IS NULL THEN 1 ELSE 0 END) as null_department_group,
   SUM(CASE WHEN main_duty IS NULL THEN 1 ELSE 0 END) as null_main_duty,
   SUM(CASE WHEN work_attributes IS NULL THEN 1 ELSE 0 END) as null_work_attributes,
+  SUM(CASE WHEN applicant_signature IS NULL THEN 1 ELSE 0 END) as null_applicant_signature,
   SUM(CASE WHEN requested_amount IS NULL THEN 1 ELSE 0 END) as null_requested_amount,
   SUM(CASE WHEN effective_date IS NULL THEN 1 ELSE 0 END) as null_effective_date
 FROM pts_requests;

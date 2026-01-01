@@ -16,8 +16,9 @@ frontend/
 ├── types/
 │   └── request.types.ts           # Request type definitions
 │
-├── services/
-│   └── requestService.ts          # API service for requests
+├── lib/
+│   └── api/
+│       └── requestApi.ts         # API client for requests
 │
 ├── components/
 │   ├── common/
@@ -58,9 +59,9 @@ Defines TypeScript types and enums for:
 - Thai language labels for all statuses and types
 - Step-to-role mappings for 5-step approval workflow
 
-### 2. Request Service (`services/requestService.ts`)
+### 2. Request API (`lib/api/requestApi.ts`)
 
-API service functions:
+HTTP client functions:
 - `createRequest()` - Create new request with files (multipart/form-data)
 - `submitRequest()` - Submit draft to start workflow
 - `getMyRequests()` - Fetch user's requests

@@ -64,6 +64,11 @@ export interface UserProfile {
   role: UserRole;
   is_active: boolean;
   last_login_at: Date | null;
+  first_name?: string;
+  last_name?: string;
+  position?: string;
+  position_number?: string;
+  department?: string;
 }
 
 /**

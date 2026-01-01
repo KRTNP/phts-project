@@ -21,12 +21,8 @@ import {
   Container,
   Stack,
 } from '@mui/material';
-import {
-  AccountCircle,
-  Logout,
-  LocalHospital,
-} from '@mui/icons-material';
-import { AuthService } from '@/services/authService';
+import { AccountCircle, Logout, LocalHospital } from '@mui/icons-material';
+import { AuthService } from '@/lib/api/authApi';
 import { UserProfile, ROLE_NAMES } from '@/types/auth';
 import { useRouter } from 'next/navigation';
 

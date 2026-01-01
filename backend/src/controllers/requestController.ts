@@ -122,14 +122,26 @@ export async function createRequest(
       submission_data: parsedSubmissionData,
     };
 
-    // Get uploaded files
-    const files = req.files as Express.Multer.File[] | undefined;
+    // Get uploaded files - now handles both 'files' and 'applicant_signature' fields
+    let documentFiles: Express.Multer.File[] | undefined;
+    let signatureFile: Express.Multer.File | undefined;
+
+    if (req.files) {
+      // When using fields(), req.files is an object with field names as keys
+      const uploadedFiles = req.files as { [fieldname: string]: Express.Multer.File[] };
+      documentFiles = uploadedFiles['files'];
+      signatureFile = uploadedFiles['applicant_signature']?.[0];
+    }
+
+    // Get signature path if uploaded
+    const signaturePath = signatureFile ? `uploads/signatures/${signatureFile.filename}` : undefined;
 
     // Create request
     const request = await requestService.createRequest(
       req.user.userId,
       requestData,
-      files
+      documentFiles,
+      signaturePath
     );
 
     res.status(201).json({
@@ -533,10 +545,14 @@ export async function returnRequest(
 }
 
 /**
- * Batch approve multiple requests (DIRECTOR only)
+ * Batch approve multiple requests (DIRECTOR or HEAD_FINANCE)
+ *
+ * Supports batch approval for:
+ * - DIRECTOR at Step 4: Moves requests to Step 5 (HEAD_FINANCE)
+ * - HEAD_FINANCE at Step 5: Marks requests as APPROVED and triggers finalization
  *
  * @route POST /api/requests/batch-approve
- * @access Protected (DIRECTOR only)
+ * @access Protected (DIRECTOR or HEAD_FINANCE only)
  */
 export async function approveBatch(
   req: Request,
@@ -551,11 +567,12 @@ export async function approveBatch(
       return;
     }
 
-    // Validate user is DIRECTOR
-    if (req.user.role !== 'DIRECTOR') {
+    // Validate user is DIRECTOR or HEAD_FINANCE
+    const allowedRoles = ['DIRECTOR', 'HEAD_FINANCE'];
+    if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        error: 'Only DIRECTOR can perform batch approval',
+        error: 'Only DIRECTOR or HEAD_FINANCE can perform batch approval',
       });
       return;
     }
@@ -581,10 +598,14 @@ export async function approveBatch(
       return;
     }
 
-    const result = await requestService.approveBatch(req.user.userId, {
-      requestIds,
-      comment,
-    });
+    const result = await requestService.approveBatch(
+      req.user.userId,
+      req.user.role,
+      {
+        requestIds,
+        comment,
+      }
+    );
 
     res.status(200).json({
       success: true,

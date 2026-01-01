@@ -36,6 +36,51 @@ function isValidCitizenId(citizenId: string): boolean {
 }
 
 /**
+ * Get user base record plus profile details from local tables.
+ */
+async function getUserWithProfile(userId: number): Promise<UserProfile | null> {
+  const users = await query<User[]>(
+    'SELECT user_id, citizen_id, role, is_active, last_login_at FROM users WHERE user_id = ? LIMIT 1',
+    [userId]
+  );
+
+  if (!users || users.length === 0) {
+    return null;
+  }
+
+  const user = users[0];
+
+  let employeeDetails = await query<any[]>(
+    `SELECT first_name, last_name, position_name as position, department, position_number 
+     FROM pts_employees WHERE citizen_id = ? LIMIT 1`,
+    [user.citizen_id]
+  );
+
+  if (!employeeDetails || employeeDetails.length === 0) {
+    employeeDetails = await query<any[]>(
+      `SELECT first_name, last_name, position_name as position, department, position_number 
+       FROM pts_support_employees WHERE citizen_id = ? LIMIT 1`,
+      [user.citizen_id]
+    );
+  }
+
+  const detail = employeeDetails?.[0];
+
+  return {
+    id: user.user_id,
+    citizen_id: user.citizen_id,
+    role: user.role,
+    is_active: user.is_active,
+    last_login_at: user.last_login_at,
+    first_name: detail?.first_name,
+    last_name: detail?.last_name,
+    position: detail?.position,
+    position_number: detail?.position_number,
+    department: detail?.department,
+  };
+}
+
+/**
  * Login Handler
  *
  * Authenticates user with citizen_id and password
@@ -125,14 +170,14 @@ export async function login(
       expiresIn: '24h',
     });
 
-    // Prepare user profile (exclude sensitive data)
-    const userProfile: UserProfile = {
-      id: user.user_id,
-      citizen_id: user.citizen_id,
-      role: user.role,
-      is_active: user.is_active,
-      last_login_at: user.last_login_at,
-    };
+    const userProfile: UserProfile =
+      (await getUserWithProfile(user.user_id)) || {
+        id: user.user_id,
+        citizen_id: user.citizen_id,
+        role: user.role,
+        is_active: user.is_active,
+        last_login_at: user.last_login_at,
+      };
 
     // Return success response
     res.status(200).json({
@@ -173,29 +218,15 @@ export async function getCurrentUser(
 
     const { userId } = req.user;
 
-    // Fetch latest user data from database
-    const users = await query<User[]>(
-      'SELECT user_id, citizen_id, role, is_active, last_login_at FROM users WHERE user_id = ? LIMIT 1',
-      [userId]
-    );
+    const userProfile = await getUserWithProfile(userId);
 
-    if (!users || users.length === 0) {
+    if (!userProfile) {
       res.status(404).json({
         success: false,
         error: 'User not found',
       });
       return;
     }
-
-    const user = users[0];
-
-    const userProfile: UserProfile = {
-      id: user.user_id,
-      citizen_id: user.citizen_id,
-      role: user.role,
-      is_active: user.is_active,
-      last_login_at: user.last_login_at,
-    };
 
     res.status(200).json({
       success: true,

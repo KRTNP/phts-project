@@ -122,6 +122,7 @@ export interface PTSRequest {
   department_group: string | null;
   main_duty: string | null;
   work_attributes: WorkAttributes | null;
+  applicant_signature: string | null; // Path to signature image
 
   // Request Details
   request_type: RequestType;

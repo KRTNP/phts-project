@@ -15,6 +15,7 @@ import { testConnection, closePool } from './config/database.js';
 import { initializePassport } from './config/passport.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
+import signatureRoutes from './routes/signatureRoutes.js';
 import { ApiResponse } from './types/auth.js';
 
 // Load environment variables
@@ -85,6 +86,7 @@ app.get('/health', (_req: Request, res: Response<ApiResponse>) => {
  */
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/signatures', signatureRoutes);
 
 /**
  * 404 Handler - Route Not Found

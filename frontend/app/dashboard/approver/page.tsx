@@ -21,7 +21,7 @@ import {
 import { Assignment } from '@mui/icons-material';
 import ApprovalList from '@/components/requests/ApprovalList';
 import { RequestWithDetails } from '@/types/request.types';
-import * as requestService from '@/services/requestService';
+import * as requestApi from '@/lib/api/requestApi';
 
 export default function ApproverDashboard() {
   const [requests, setRequests] = useState<RequestWithDetails[]>([]);
@@ -40,7 +40,7 @@ export default function ApproverDashboard() {
   const fetchPendingRequests = async () => {
     try {
       setLoading(true);
-      const data = await requestService.getPendingRequests();
+      const data = await requestApi.getPendingRequests();
       setRequests(data);
       setError(null);
     } catch (err: any) {
@@ -56,7 +56,7 @@ export default function ApproverDashboard() {
 
   const handleApprove = async (requestId: number, comment?: string) => {
     try {
-      await requestService.approveRequest(requestId, comment);
+      await requestApi.approveRequest(requestId, comment);
       setToast({
         open: true,
         message: 'อนุมัติคำขอสำเร็จ',
@@ -70,7 +70,7 @@ export default function ApproverDashboard() {
 
   const handleReject = async (requestId: number, comment: string) => {
     try {
-      await requestService.rejectRequest(requestId, comment);
+      await requestApi.rejectRequest(requestId, comment);
       setToast({
         open: true,
         message: 'ปฏิเสธคำขอสำเร็จ',
@@ -84,7 +84,7 @@ export default function ApproverDashboard() {
 
   const handleReturn = async (requestId: number, comment: string) => {
     try {
-      await requestService.returnRequest(requestId, comment);
+      await requestApi.returnRequest(requestId, comment);
       setToast({
         open: true,
         message: 'ส่งคำขอกลับสำเร็จ',

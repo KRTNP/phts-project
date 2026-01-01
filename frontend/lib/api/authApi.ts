@@ -1,7 +1,7 @@
 /**
- * PHTS System - Authentication Service
+ * PHTS System - Authentication API (Frontend)
  *
- * Handles login, logout, and token management
+ * Handles login, logout, and token management via HTTP endpoints.
  */
 
 import { apiClient } from '@/lib/axios';
@@ -16,15 +16,9 @@ export class AuthService {
   /**
    * Login user with citizen ID and password
    */
-  static async login(
-    credentials: LoginCredentials
-  ): Promise<LoginResponse> {
+  static async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<LoginResponse>(
-        '/api/auth/login',
-        credentials
-      );
-
+      const response = await apiClient.post<LoginResponse>('/api/auth/login', credentials);
       const { token, user } = response.data;
 
       // Store token and user info in localStorage
@@ -41,7 +35,8 @@ export class AuthService {
       }
       throw {
         success: false,
-        message: 'การเชื่อมต่อล้มเหลว กรุณาลองใหม่อีกครั้ง (Connection failed)',
+        message:
+          'Е,?Е,¤Е,ЬЕ1?Е,SЕ,·Е1^Е,-Е,нЕ,Е1^Е,-Е,ЭЕ1%Е,нЕ1?Е,оЕ,ЭЕ, Е,?Е,ЬЕ,,Е,"Е,¤Е,ЭЕ,-Е,╪Е1ЯЕ,оЕ,нЕ1^Е,-Е,цЕ,?Е,,Е,ЬЕ,ёЕ1%Е,╪ (Connection failed)',
         error: error.message,
       };
     }

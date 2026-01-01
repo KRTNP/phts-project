@@ -1,12 +1,14 @@
 /**
- * PHTS System - Request Status Table Component
+ * PHTS System - Request Status Table (Responsive)
  *
- * Table displaying user's request history with status tracking
+ * Desktop: table view
+ * Mobile/Tablet: card list view for readability
  */
 
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -19,13 +21,18 @@ import {
   Box,
   Skeleton,
   Alert,
+  Stack,
+  Divider,
+  CardActionArea,
 } from '@mui/material';
-import { useRouter } from 'next/navigation';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
-  RequestWithDetails,
-  REQUEST_TYPE_LABELS,
-  STEP_LABELS,
-} from '@/types/request.types';
+  Description as DocIcon,
+  CalendarToday as DateIcon,
+  ChevronRight as ArrowIcon,
+} from '@mui/icons-material';
+import { RequestWithDetails, REQUEST_TYPE_LABELS, STEP_LABELS } from '@/types/request.types';
 import StatusChip from '@/components/common/StatusChip';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -42,116 +49,142 @@ export default function RequestStatusTable({
   error = null,
 }: RequestStatusTableProps) {
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const formatDate = (date: Date | string): string => {
+  const formatDate = (date: Date | string) => {
     try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      return format(dateObj, 'd MMM yyyy HH:mm', { locale: th });
+      const d = typeof date === 'string' ? new Date(date) : date;
+      return format(d, 'd MMM yy', { locale: th });
     } catch {
       return '-';
     }
   };
 
-  const getCurrentStepLabel = (request: RequestWithDetails): string => {
-    if (request.status === 'DRAFT') return 'แบบร่าง';
-    if (request.status === 'APPROVED') return 'เสร็จสิ้น';
-    if (request.status === 'REJECTED') return 'ไม่อนุมัติ';
-    if (request.status === 'CANCELLED') return 'ยกเลิก';
-
-    const stepLabel = STEP_LABELS[request.current_step] || `ขั้นตอนที่ ${request.current_step}`;
-    return `ขั้นตอนที่ ${request.current_step}: ${stepLabel}`;
+  const getStepLabel = (req: RequestWithDetails) => {
+    if (req.status === 'DRAFT') return 'แบบร่าง';
+    if (req.status === 'APPROVED') return 'อนุมัติแล้ว';
+    if (req.status === 'REJECTED') return 'ถูกปฏิเสธ';
+    return `ขั้นที่ ${req.current_step}: ${STEP_LABELS[req.current_step] || ''}`;
   };
 
-  const handleRowClick = (requestId: number) => {
-    router.push(`/dashboard/user/requests/${requestId}`);
-  };
+  const handleRowClick = (id: number) => router.push(`/dashboard/user/requests/${id}`);
 
+  // Loading / error / empty states
   if (loading) {
     return (
-      <TableContainer component={Paper}>
-        <Box p={2}>
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} height={60} />
-          ))}
-        </Box>
-      </TableContainer>
+      <Box p={2}>
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} height={isMobile ? 84 : 50} />
+        ))}
+      </Box>
     );
   }
 
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
-  }
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   if (requests.length === 0) {
     return (
-      <Paper sx={{ p: 4, textAlign: 'center' }}>
+      <Box p={4} textAlign="center">
         <Typography variant="body1" color="text.secondary">
-          ยังไม่มีคำขอในระบบ
+          ไม่พบรายการคำขอ
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          คลิกปุ่ม "ยื่นคำขอใหม่" เพื่อเริ่มต้น
+          กด "ยื่นคำขอใหม่" เพื่อเริ่มต้น
         </Typography>
-      </Paper>
+      </Box>
     );
   }
 
+  // Mobile / Tablet: Card List
+  if (isMobile) {
+    return (
+      <Stack spacing={0} divider={<Divider />}>
+        {requests.map((req) => (
+          <CardActionArea key={req.request_id} onClick={() => handleRowClick(req.request_id)}>
+            <Box sx={{ p: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {REQUEST_TYPE_LABELS[req.request_type]}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                  >
+                    <DateIcon sx={{ fontSize: 14 }} /> {formatDate(req.submitted_at || req.created_at)}
+                  </Typography>
+                </Box>
+                <StatusChip status={req.status} size="small" />
+              </Stack>
+
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: '80%' }}>
+                  {getStepLabel(req)}
+                </Typography>
+                <ArrowIcon color="action" fontSize="small" />
+              </Stack>
+            </Box>
+          </CardActionArea>
+        ))}
+      </Stack>
+    );
+  }
+
+  // Desktop: Table
   return (
     <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
+      <Table sx={{ minWidth: 650 }}>
+        <TableHead sx={{ bgcolor: 'grey.50' }}>
           <TableRow>
-            <TableCell>
-              <Typography variant="subtitle2" fontWeight={600}>
-                วันที่ยื่น
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="subtitle2" fontWeight={600}>
-                ประเภทคำขอ
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="subtitle2" fontWeight={600}>
-                ขั้นตอนปัจจุบัน
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="subtitle2" fontWeight={600}>
-                สถานะ
-              </Typography>
-            </TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>ประเภทคำขอ</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>วันที่ยื่น</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>ขั้นตอนปัจจุบัน</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>สถานะ</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {requests.map((request) => (
+          {requests.map((req) => (
             <TableRow
-              key={request.request_id}
+              key={req.request_id}
               hover
-              onClick={() => handleRowClick(request.request_id)}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-              }}
+              onClick={() => handleRowClick(req.request_id)}
+              sx={{ cursor: 'pointer' }}
             >
               <TableCell>
-                <Typography variant="body2">
-                  {formatDate(request.submitted_at || request.created_at)}
-                </Typography>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Box
+                    sx={{
+                      p: 0.5,
+                      borderRadius: 1,
+                      bgcolor: 'primary.50',
+                      color: 'primary.main',
+                      display: 'flex',
+                    }}
+                  >
+                    <DocIcon fontSize="small" />
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      {REQUEST_TYPE_LABELS[req.request_type]}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      #{req.request_id}
+                    </Typography>
+                  </Box>
+                </Stack>
               </TableCell>
               <TableCell>
-                <Typography variant="body2">
-                  {REQUEST_TYPE_LABELS[request.request_type]}
-                </Typography>
+                <Typography variant="body2">{formatDate(req.submitted_at || req.created_at)}</Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="body2" color="text.secondary">
-                  {getCurrentStepLabel(request)}
+                  {getStepLabel(req)}
                 </Typography>
               </TableCell>
               <TableCell>
-                <StatusChip status={request.status} />
+                <StatusChip status={req.status} size="small" />
               </TableCell>
             </TableRow>
           ))}

@@ -1,22 +1,19 @@
 /**
  * PHTS System - User Request Page
  *
- * Page for creating new PTS requests
+ * Page for creating new PTS requests with A4 paper-style form
+ * Includes digital signature support
  */
 
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Stack,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+import { Box, Snackbar, Alert } from '@mui/material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RequestForm from '@/components/requests/RequestForm';
 import { CreateRequestDTO } from '@/types/request.types';
-import * as requestService from '@/services/requestService';
+import * as requestApi from '@/lib/api/requestApi';
 
 export default function UserRequestPage() {
   const router = useRouter();
@@ -31,17 +28,14 @@ export default function UserRequestPage() {
     severity: 'success',
   });
 
-  const handleSubmit = async (
-    data: CreateRequestDTO,
-    files: File[]
-  ) => {
+  const handleSubmit = async (data: CreateRequestDTO, files: File[], signatureFile?: File) => {
     setIsSubmitting(true);
     try {
-      // Create and submit request
-      const request = await requestService.createRequest(data, files);
+      // Create request with signature (keep signature separate from attachments)
+      const request = await requestApi.createRequest(data, files, signatureFile);
 
       // Automatically submit the request (move from DRAFT to PENDING)
-      await requestService.submitRequest(request.request_id);
+      await requestApi.submitRequest(request.request_id);
 
       // Show success message
       setToast({
@@ -54,13 +48,37 @@ export default function UserRequestPage() {
       setTimeout(() => {
         router.push('/dashboard/user');
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการส่งคำขอ';
       setToast({
         open: true,
-        message: error.message || 'เกิดข้อผิดพลาดในการส่งคำขอ',
+        message: errorMessage,
         severity: 'error',
       });
       throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveDraft = async (data: CreateRequestDTO) => {
+    setIsSubmitting(true);
+    try {
+      // Create request as draft (don't submit)
+      await requestApi.createRequest(data, []);
+
+      setToast({
+        open: true,
+        message: 'บันทึกร่างสำเร็จ!',
+        severity: 'success',
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึก';
+      setToast({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -76,13 +94,24 @@ export default function UserRequestPage() {
 
   return (
     <DashboardLayout title="ยื่นคำขอรับค่าตอบแทน พ.ต.ส.">
-      <Stack spacing={3}>
+      <Box
+        sx={{
+          backgroundColor: '#f4f6f8',
+          minHeight: '100vh',
+          py: 2,
+          '@media print': {
+            backgroundColor: 'transparent',
+            py: 0,
+          },
+        }}
+      >
         <RequestForm
           onSubmit={handleSubmit}
+          onSaveDraft={handleSaveDraft}
           onCancel={handleCancel}
           isSubmitting={isSubmitting}
         />
-      </Stack>
+      </Box>
 
       {/* Toast Notification */}
       <Snackbar

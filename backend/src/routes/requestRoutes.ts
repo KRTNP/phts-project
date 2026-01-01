@@ -8,7 +8,7 @@
 
 import { Router } from 'express';
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
-import { upload } from '../config/upload.js';
+import { requestUpload } from '../config/upload.js';
 import * as requestController from '../controllers/requestController.js';
 import { UserRole } from '../types/auth.js';
 
@@ -34,10 +34,13 @@ router.post(
  * Available to all authenticated users
  */
 
-// Create new request with file uploads
+// Create new request with file uploads and signature
 router.post(
   '/',
-  upload.array('files', 10),
+  requestUpload.fields([
+    { name: 'files', maxCount: 10 },
+    { name: 'applicant_signature', maxCount: 1 }
+  ]),
   requestController.createRequest
 );
 
@@ -45,6 +48,19 @@ router.post(
 router.get(
   '/',
   requestController.getMyRequests
+);
+
+// Get pending requests for approval (based on user's role)
+router.get(
+  '/pending',
+  restrictTo(
+    UserRole.HEAD_DEPT,
+    UserRole.PTS_OFFICER,
+    UserRole.HEAD_HR,
+    UserRole.DIRECTOR,
+    UserRole.HEAD_FINANCE
+  ),
+  requestController.getPendingApprovals
 );
 
 // Get request details by ID
@@ -63,19 +79,6 @@ router.post(
  * Approver Routes
  * Restricted to users with approval roles
  */
-
-// Get pending requests for approval (based on user's role)
-router.get(
-  '/pending',
-  restrictTo(
-    UserRole.HEAD_DEPT,
-    UserRole.PTS_OFFICER,
-    UserRole.HEAD_HR,
-    UserRole.DIRECTOR,
-    UserRole.HEAD_FINANCE
-  ),
-  requestController.getPendingApprovals
-);
 
 // Approve a request
 router.post(

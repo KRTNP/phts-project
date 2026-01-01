@@ -28,7 +28,7 @@ import {
   Person,
   Lock,
 } from '@mui/icons-material';
-import { AuthService } from '@/services/authService';
+import { AuthService } from '@/lib/api/authApi';
 import { LoginCredentials } from '@/types/auth';
 
 export default function LoginPage() {
