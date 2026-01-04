@@ -618,8 +618,7 @@ export async function approveBatch(
   const connection = await getConnection();
 
   try {
-    await connection.beginTransaction();
-
+    // Fetch approver signature once (same approver for all)
     const [sigRows] = await connection.query<RowDataPacket[]>(
       'SELECT signature_image FROM pts_user_signatures WHERE user_id = ? LIMIT 1',
       [actorId],
@@ -634,12 +633,16 @@ export async function approveBatch(
 
     for (const requestId of requestIds) {
       try {
+        // Each request gets its own transaction to avoid cross-contamination
+        await connection.beginTransaction();
+
         const [rows] = await connection.query<RowDataPacket[]>(
           'SELECT * FROM pts_requests WHERE request_id = ? FOR UPDATE',
           [requestId],
         );
 
         if (rows.length === 0) {
+          await connection.rollback();
           result.failed.push({ id: requestId, reason: 'Request not found' });
           continue;
         }
@@ -647,6 +650,7 @@ export async function approveBatch(
         const request = mapRequestRow(rows[0]);
 
         if (request.current_step !== expectedStep) {
+          await connection.rollback();
           result.failed.push({
             id: requestId,
             reason: `Not at Step ${expectedStep} (currently at Step ${request.current_step})`,
@@ -655,6 +659,7 @@ export async function approveBatch(
         }
 
         if (request.status !== RequestStatus.PENDING) {
+          await connection.rollback();
           result.failed.push({
             id: requestId,
             reason: `Status is ${request.status}, not PENDING`,
@@ -664,18 +669,16 @@ export async function approveBatch(
 
         await _performApproval(connection, request, requestId, actorId, comment || null, signatureSnapshot);
 
+        await connection.commit();
         result.success.push(requestId);
       } catch (err) {
+        await connection.rollback();
         console.error(`Error processing request ${requestId}:`, err);
-        result.failed.push({ id: requestId, reason: 'Database error' });
+        result.failed.push({ id: requestId, reason: 'Database error or Finalization failed' });
       }
     }
 
-    await connection.commit();
     return result;
-  } catch (error) {
-    await connection.rollback();
-    throw error;
   } finally {
     connection.release();
   }
