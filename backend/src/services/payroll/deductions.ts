@@ -1,5 +1,5 @@
 import { RowDataPacket } from 'mysql2/promise';
-import { LEAVE_RULES, LeaveRuleType, LeaveUnit } from '../../config/payroll.constants.js';
+import { LEAVE_RULES } from '../../config/payroll.constants.js';
 import {
   countBusinessDays,
   countCalendarDays,

@@ -64,6 +64,13 @@ export async function findRecommendedRate(citizenId: string): Promise<MasterRate
     } else if (includesAny(subDept, RULES.NURSE_GROUP2_SUB) || includesAny(expert, RULES.NURSE_GROUP2_EXPERT)) {
       targetGroup = 2;
     }
+  } else if (includesAny(pos, RULES.DENTIST_KEYWORDS)) {
+    targetProfession = 'DENTIST';
+    if (includesAny(expert, RULES.DENTIST_GROUP3_EXPERT) || specialist !== '') {
+      targetGroup = 3;
+    } else if (includesAny(expert, RULES.DENTIST_GROUP2_EXPERT)) {
+      targetGroup = 2;
+    }
   } else if (includesAny(pos, RULES.DOCTOR_KEYWORDS)) {
     targetProfession = 'DOCTOR';
     if (
@@ -72,13 +79,6 @@ export async function findRecommendedRate(citizenId: string): Promise<MasterRate
     ) {
       targetGroup = 3;
     } else if (specialist !== '' || includesAny(expert, RULES.DOCTOR_GROUP2_EXPERT)) {
-      targetGroup = 2;
-    }
-  } else if (includesAny(pos, RULES.DENTIST_KEYWORDS)) {
-    targetProfession = 'DENTIST';
-    if (includesAny(expert, RULES.DENTIST_GROUP3_EXPERT) || specialist !== '') {
-      targetGroup = 3;
-    } else if (includesAny(expert, RULES.DENTIST_GROUP2_EXPERT)) {
       targetGroup = 2;
     }
   } else if (includesAny(pos, RULES.PHARMACIST_KEYWORDS)) {

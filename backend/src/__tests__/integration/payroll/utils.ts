@@ -101,8 +101,8 @@ export async function setupSchema(pool: Pool) {
       occupation_name VARCHAR(255)
     );
     CREATE TABLE IF NOT EXISTS pts_leave_requests (
-      id INT PRIMARY KEY AUTO_INCREMENT, 
-      citizen_id VARCHAR(20), 
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      citizen_id VARCHAR(20),
       leave_type VARCHAR(50),
       start_date DATE,
       end_date DATE,
@@ -110,8 +110,8 @@ export async function setupSchema(pool: Pool) {
       fiscal_year INT
     );
     CREATE TABLE IF NOT EXISTS pts_leave_quotas (
-      id INT PRIMARY KEY AUTO_INCREMENT, 
-      citizen_id VARCHAR(20), 
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      citizen_id VARCHAR(20),
       fiscal_year INT,
       quota_vacation DECIMAL(5,2) DEFAULT 10,
       quota_personal DECIMAL(5,2) DEFAULT 45,
@@ -123,8 +123,8 @@ export async function setupSchema(pool: Pool) {
 
 export async function seedBaseData(pool: Pool) {
   await pool.query(`
-    INSERT INTO pts_master_rates (profession_code, group_no, amount) VALUES 
-    ('DOCTOR', 1, 5000), 
+    INSERT INTO pts_master_rates (profession_code, group_no, amount) VALUES
+    ('DOCTOR', 1, 5000),
     ('DOCTOR', 2, 10000);
   `);
   await pool.query(`INSERT INTO users (citizen_id, role) VALUES ('DOC1', 'USER')`);

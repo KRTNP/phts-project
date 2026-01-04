@@ -158,4 +158,27 @@ export const payrollController = {
       return res.status(500).json({ error: error.message });
     }
   },
+
+  // Batch calculation for all active employees
+  calculatePayrollBatch: async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { year, month } = req.body ?? {};
+      const yearNum = Number(year);
+      const monthNum = Number(month);
+
+      if (!yearNum || !monthNum) {
+        return res.status(400).json({ error: 'Year and month are required' });
+      }
+
+      const result = await payrollService.calculateBatch(yearNum, monthNum);
+      return res.json({
+        success: true,
+        message: `Batch calculation completed for ${result.total} employees`,
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('Batch Calculation Error:', error);
+      return res.status(500).json({ error: 'Internal server error during batch calculation' });
+    }
+  },
 };

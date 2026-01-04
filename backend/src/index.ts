@@ -17,6 +17,7 @@ import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import signatureRoutes from './routes/signatureRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
 import { ApiResponse } from './types/auth.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 
@@ -90,6 +91,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/signatures', signatureRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/reports', reportRoutes);
 
 /**
  * 404 Handler - Route Not Found

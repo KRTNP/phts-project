@@ -10,9 +10,10 @@ export const validate = (chains: ValidationChain[]) => {
     (req: Request, res: Response, next: NextFunction) => {
       const result = validationResult(req);
       if (!result.isEmpty()) {
-        return res.status(400).json({ errors: result.array() });
+        res.status(400).json({ errors: result.array() });
+        return;
       }
-      next();
+      return next();
     },
   ];
 };

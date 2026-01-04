@@ -19,4 +19,7 @@ router.get('/periods', payrollController.getPeriods);
 // GET /api/payroll/periods/:id/payouts
 router.get('/periods/:id/payouts', payrollController.getPayouts);
 
+// Batch calculation (all active employees)
+router.post('/calculate-batch', payrollController.calculatePayrollBatch);
+
 export default router;
