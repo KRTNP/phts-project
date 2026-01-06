@@ -745,7 +745,7 @@ export async function finalizeRequest(
   const [requests] = await connection.query<RowDataPacket[]>(
     `SELECT r.*, u.citizen_id
      FROM pts_requests r
-     JOIN users u ON r.user_id = u.user_id
+     JOIN users u ON r.user_id = u.id
      WHERE r.request_id = ?`,
     [requestId],
   );
