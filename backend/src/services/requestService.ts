@@ -38,7 +38,7 @@ const REQUESTER_FIELDS = `
 `;
 
 const REQUESTER_JOINS = `
-  JOIN users u ON r.user_id = u.user_id
+  JOIN users u ON r.user_id = u.id
   LEFT JOIN pts_employees e ON u.citizen_id = e.citizen_id
   LEFT JOIN pts_support_employees s ON u.citizen_id = s.citizen_id
 `;
@@ -107,7 +107,7 @@ function mapRequestRow(row: any): PTSRequest & {
  */
 export async function getRecommendedRateForUser(userId: number): Promise<MasterRate | null> {
   const users = await query<RowDataPacket[]>(
-    'SELECT citizen_id FROM users WHERE user_id = ? LIMIT 1',
+    'SELECT citizen_id FROM users WHERE id = ? LIMIT 1',
     [userId],
   );
 
@@ -135,7 +135,7 @@ export async function createRequest(
 
     // Ensure citizen_id is available for the insert
     const [userRows] = await connection.query<RowDataPacket[]>(
-      'SELECT citizen_id FROM users WHERE user_id = ? LIMIT 1',
+      'SELECT citizen_id FROM users WHERE id = ? LIMIT 1',
       [userId],
     );
     if (!userRows.length) {
@@ -829,7 +829,7 @@ async function getRequestDetails(requestId: number): Promise<RequestWithDetails>
             COALESCE(e.first_name, s.first_name) as actor_first_name,
             COALESCE(e.last_name, s.last_name) as actor_last_name
      FROM pts_request_actions a
-     JOIN users u ON a.actor_id = u.user_id
+    JOIN users u ON a.actor_id = u.id
      LEFT JOIN pts_employees e ON u.citizen_id = e.citizen_id
      LEFT JOIN pts_support_employees s ON u.citizen_id = s.citizen_id
      WHERE a.request_id = ?
