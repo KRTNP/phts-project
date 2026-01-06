@@ -1,6 +1,8 @@
 import { RowDataPacket } from 'mysql2/promise';
 import { query } from '../config/database.js';
 
+const DEFAULT_CHUNK_SIZE = 200; // avoid oversized packets on bulk inserts
+
 export class NotificationService {
   static async notifyUser(
     userId: number,
@@ -15,21 +17,28 @@ export class NotificationService {
     );
   }
 
-  static async notifyRole(role: string, title: string, message: string, link: string = '#') {
+  static async notifyRole(
+    role: string,
+    title: string,
+    message: string,
+    link: string = '#',
+    chunkSize: number = DEFAULT_CHUNK_SIZE,
+  ) {
     const users = await query<RowDataPacket[]>(
       'SELECT id FROM users WHERE role = ? AND is_active = 1',
       [role],
     );
 
     if (users.length > 0) {
-      const values = users.map((u: any) => [u.id, title, message, link, 'INFO']);
-      const placeholders = values.map(() => '(?, ?, ?, ?, ?)').join(', ');
-      const flatValues = values.flat();
-
-      await query(
-        `INSERT INTO pts_notifications (user_id, title, message, link, type) VALUES ${placeholders}`,
-        flatValues,
-      );
+      for (let i = 0; i < users.length; i += chunkSize) {
+        const batch = users.slice(i, i + chunkSize).map((u: any) => [u.id, title, message, link, 'INFO']);
+        const placeholders = batch.map(() => '(?, ?, ?, ?, ?)').join(', ');
+        const flatValues = batch.flat();
+        await query(
+          `INSERT INTO pts_notifications (user_id, title, message, link, type) VALUES ${placeholders}`,
+          flatValues,
+        );
+      }
     }
   }
 

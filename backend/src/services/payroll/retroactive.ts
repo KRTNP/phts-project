@@ -1,4 +1,4 @@
-import { RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import pool from '../../config/database.js';
 import { calculateMonthly, RetroDetail } from './calculator.js';
 
@@ -7,7 +7,7 @@ export async function calculateRetroactive(
   currentYear: number,
   currentMonth: number,
   lookBackMonths = 6,
-  connection?: any,
+  connection?: PoolConnection,
 ): Promise<{ totalRetro: number; retroDetails: RetroDetail[] }> {
   let totalRetro = 0;
   const retroDetails: RetroDetail[] = [];
@@ -20,7 +20,7 @@ export async function calculateRetroactive(
       targetYear -= 1;
     }
 
-    const dbConn: any = connection ?? pool;
+    const dbConn: Pick<PoolConnection, 'query'> = connection ?? pool;
 
     const [periodRows] = await dbConn.query<RowDataPacket[]>(
       `SELECT period_id, status FROM pts_periods WHERE period_month = ? AND period_year = ?`,
