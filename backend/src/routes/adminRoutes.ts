@@ -9,8 +9,8 @@ const router = Router();
 // All routes require authentication
 router.use(protect);
 
-// Officer/ADMIN access
-const officerAuth = restrictTo(UserRole.PTS_OFFICER, UserRole.ADMIN);
+// Officer only access
+const officerAuth = restrictTo(UserRole.PTS_OFFICER);
 
 router.get('/holidays', officerAuth, officerCtrl.getHolidays);
 router.post('/holidays', officerAuth, officerCtrl.addHoliday);
@@ -27,6 +27,7 @@ const adminAuth = restrictTo(UserRole.ADMIN);
 router.get('/users', adminAuth, adminCtrl.searchUsers);
 router.put('/users/:userId/role', adminAuth, adminCtrl.updateUserRole);
 
+router.post('/system/sync', adminAuth, adminCtrl.triggerSync);
 router.post('/system/maintenance', adminAuth, adminCtrl.toggleMaintenanceMode);
 router.post('/system/backup', adminAuth, adminCtrl.triggerBackup);
 

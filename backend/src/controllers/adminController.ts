@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database.js';
 import { UserRole } from '../types/auth.js';
+import { SyncService } from '../services/syncService.js';
 
 export const searchUsers = async (req: Request, res: Response) => {
   try {
@@ -49,4 +50,13 @@ export const toggleMaintenanceMode = async (req: Request, res: Response) => {
 
 export const triggerBackup = async (_req: Request, res: Response) => {
   res.json({ success: true, message: 'Backup process started in background' });
+};
+
+export const triggerSync = async (_req: Request, res: Response) => {
+  try {
+    const result = await SyncService.performFullSync();
+    res.json({ success: true, message: 'Sync process started successfully', data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
