@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { PayrollService, PeriodStatus } from '../services/payrollService.js';
-import { UserRole } from '../types/auth.js';
+import { PayrollService } from '../services/payrollService.js';
 
 export const getPeriodStatus = async (req: Request, res: Response) => {
   try {
