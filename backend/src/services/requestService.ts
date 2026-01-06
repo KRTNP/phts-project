@@ -23,6 +23,7 @@ import {
   BatchApproveParams,
   BatchApproveResult,
 } from '../types/request.types.js';
+import { NotificationService } from './notificationService.js';
 import { findRecommendedRate, MasterRate } from './classificationService.js';
 import { createEligibility } from './eligibilityService.js';
 import { saveSignature } from './signatureService.js';
@@ -274,6 +275,13 @@ export async function submitRequest(requestId: number, userId: number): Promise<
 
     await connection.commit();
 
+    await NotificationService.notifyRole(
+      'HEAD_DEPT',
+      'มีคำขอใหม่รออนุมัติ',
+      `มีคำขอเลขที่ ${request.request_no} รอการตรวจสอบจากท่าน`,
+      `/dashboard/approver/requests/${requestId}`,
+    );
+
     const [updatedRequests] = await connection.query<RowDataPacket[]>(
       'SELECT * FROM pts_requests WHERE request_id = ?',
       [requestId],
@@ -451,6 +459,13 @@ export async function approveRequest(
 
     await connection.commit();
 
+    await NotificationService.notifyRole(
+      'HEAD_DEPT',
+      'มีคำขอใหม่รออนุมัติ',
+      `มีคำขอเลขที่ ${request.request_no} รอการตรวจสอบจากท่าน`,
+      `/dashboard/approver/requests/${requestId}`,
+    );
+
     const [updatedRequests] = await connection.query<RowDataPacket[]>(
       'SELECT * FROM pts_requests WHERE request_id = ?',
       [requestId],
@@ -520,6 +535,14 @@ export async function rejectRequest(
     );
 
     await connection.commit();
+
+    await NotificationService.notifyUser(
+      request.user_id,
+      'คำขอถูกปฏิเสธ',
+      `คำขอเลขที่ ${request.request_no} ถูกปฏิเสธ: ${comment}`,
+      `/dashboard/user/requests/${requestId}`,
+      'ERROR',
+    );
 
     const [updatedRequests] = await connection.query<RowDataPacket[]>(
       'SELECT * FROM pts_requests WHERE request_id = ?',
@@ -595,6 +618,14 @@ export async function returnRequest(
     );
 
     await connection.commit();
+
+    await NotificationService.notifyUser(
+      request.user_id,
+      'คำขอถูกส่งคืนแก้ไข',
+      `คำขอเลขที่ ${request.request_no} ถูกส่งคืน: ${comment}`,
+      `/dashboard/user/requests/${requestId}`,
+      'WARNING',
+    );
 
     const [updatedRequests] = await connection.query<RowDataPacket[]>(
       'SELECT * FROM pts_requests WHERE request_id = ?',
@@ -724,6 +755,13 @@ async function _performApproval(
       [RequestStatus.APPROVED, requestId],
     );
     await finalizeRequest(requestId, actorId, connection);
+    await NotificationService.notifyUser(
+      request.user_id,
+      'คำขออนุมัติแล้ว',
+      `คำขอเลขที่ ${request.request_no} ได้รับการอนุมัติครบทุกขั้นตอนแล้ว`,
+      `/dashboard/user/requests/${requestId}`,
+      'SUCCESS',
+    );
   } else {
     await connection.execute(
       `UPDATE pts_requests
@@ -731,6 +769,15 @@ async function _performApproval(
        WHERE request_id = ?`,
       [nextStep, requestId],
     );
+    const nextRole = STEP_ROLE_MAP[nextStep];
+    if (nextRole) {
+      await NotificationService.notifyRole(
+        nextRole,
+        'งานรออนุมัติ',
+        `มีคำขอเลขที่ ${request.request_no} ส่งต่อมาถึงท่าน`,
+        `/dashboard/approver/requests/${requestId}`,
+      );
+    }
   }
 }
 

@@ -19,6 +19,8 @@ import signatureRoutes from './routes/signatureRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { ApiResponse } from './types/auth.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 
@@ -93,6 +95,8 @@ app.use('/api/signatures', signatureRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/management', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 /**
  * 404 Handler - Route Not Found

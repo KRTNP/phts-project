@@ -67,59 +67,56 @@ export async function calculateMonthly(
   const daysInMonth = endOfMonth.getDate();
   const fiscalYear = month >= 10 ? year + 1 + 543 : year + 543;
 
-  const [
-    [eligibilityRows],
-    [movementRows],
-    [employeeRows],
-    [licenseRows],
-    [leaveRows],
-    [quotaRows],
-    [holidayRows],
-  ] = await Promise.all([
-    pool.query<RowDataPacket[]>(
-      `
-        SELECT e.effective_date, e.expiry_date, m.amount as rate, m.rate_id
-        FROM pts_employee_eligibility e
-        JOIN pts_master_rates m ON e.master_rate_id = m.rate_id
-        WHERE e.citizen_id = ? AND e.is_active = 1
-        AND e.effective_date <= ? 
-        AND (e.expiry_date IS NULL OR e.expiry_date >= ?)
-        ORDER BY e.effective_date ASC
-      `,
-      [citizenId, endOfMonth, startOfMonth],
-    ),
-    pool.query<RowDataPacket[]>(
-      `
-        SELECT * FROM pts_employee_movements 
-        WHERE citizen_id = ? AND effective_date <= ?
-        ORDER BY effective_date ASC, created_at ASC
-      `,
-      [citizenId, endOfMonth],
-    ),
-    pool.query<RowDataPacket[]>(`SELECT position_name FROM pts_employees WHERE citizen_id = ? LIMIT 1`, [
-      citizenId,
-    ]),
-    pool.query<RowDataPacket[]>(`SELECT * FROM pts_employee_licenses WHERE citizen_id = ?`, [
-      citizenId,
-    ]),
-    pool.query<RowDataPacket[]>(
-      `
-        SELECT * FROM pts_leave_requests 
-        WHERE citizen_id = ? AND fiscal_year = ?
-        ORDER BY start_date ASC
-      `,
-      [citizenId, fiscalYear],
-    ),
-    pool.query<RowDataPacket[]>(`SELECT * FROM pts_leave_quotas WHERE citizen_id = ? AND fiscal_year = ?`, [
-      citizenId,
-      fiscalYear,
-    ]),
-    // Holidays: cover previous year as well to include fiscal-year crossings (Oct-Dec of prior year)
-    pool.query<RowDataPacket[]>(`SELECT holiday_date FROM pts_holidays WHERE holiday_date BETWEEN ? AND ?`, [
-      `${year - 1}-01-01`,
-      `${year}-12-31`,
-    ]),
-  ]);
+  const [eligibilityRows] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT e.effective_date, e.expiry_date, m.amount as rate, m.rate_id
+      FROM pts_employee_eligibility e
+      JOIN pts_master_rates m ON e.master_rate_id = m.rate_id
+      WHERE e.citizen_id = ? AND e.is_active = 1
+      AND e.effective_date <= ? 
+      AND (e.expiry_date IS NULL OR e.expiry_date >= ?)
+      ORDER BY e.effective_date ASC
+    `,
+    [citizenId, endOfMonth, startOfMonth],
+  );
+
+  const [movementRows] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT * FROM pts_employee_movements 
+      WHERE citizen_id = ? AND effective_date <= ?
+      ORDER BY effective_date ASC, created_at ASC
+    `,
+    [citizenId, endOfMonth],
+  );
+
+  const [employeeRows] = await pool.query<RowDataPacket[]>(
+    `SELECT position_name FROM pts_employees WHERE citizen_id = ? LIMIT 1`,
+    [citizenId],
+  );
+
+  const [licenseRows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM pts_employee_licenses WHERE citizen_id = ?`,
+    [citizenId],
+  );
+
+  const [leaveRows] = await pool.query<RowDataPacket[]>(
+    `
+      SELECT * FROM pts_leave_requests 
+      WHERE citizen_id = ? AND fiscal_year = ?
+      ORDER BY start_date ASC
+    `,
+    [citizenId, fiscalYear],
+  );
+
+  const [quotaRows] = await pool.query<RowDataPacket[]>(
+    `SELECT * FROM pts_leave_quotas WHERE citizen_id = ? AND fiscal_year = ?`,
+    [citizenId, fiscalYear],
+  );
+
+  const [holidayRows] = await pool.query<RowDataPacket[]>(
+    `SELECT holiday_date FROM pts_holidays WHERE holiday_date BETWEEN ? AND ?`,
+    [`${year - 1}-01-01`, `${year}-12-31`],
+  );
 
   const eligibilities = eligibilityRows as EligibilityRow[];
   const movements = movementRows as MovementRow[];

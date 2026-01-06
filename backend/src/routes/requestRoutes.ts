@@ -25,7 +25,7 @@ router.use(protect);
  */
 router.post(
   '/batch-approve',
-  restrictTo(UserRole.DIRECTOR),
+  restrictTo(UserRole.DIRECTOR, UserRole.HEAD_FINANCE),
   requestController.approveBatch
 );
 
