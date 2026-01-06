@@ -18,7 +18,6 @@ import requestRoutes from './routes/requestRoutes.js';
 import signatureRoutes from './routes/signatureRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
-import systemRoutes from './routes/systemRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import { ApiResponse } from './types/auth.js';
@@ -94,7 +93,6 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/signatures', signatureRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/system', systemRoutes);
 app.use('/api/management', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
@@ -120,9 +118,7 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, () => {
-      console.log(
-        `[Server] PHTS Backend started on port ${PORT} (${process.env.NODE_ENV})`,
-      );
+      console.log(`[Server] PHTS Backend started on port ${PORT} (${process.env.NODE_ENV})`);
       console.log(`[Server] Database host: ${process.env.DB_HOST || 'localhost'}`);
     });
   } catch (error) {
