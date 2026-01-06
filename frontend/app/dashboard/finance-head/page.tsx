@@ -1,7 +1,7 @@
 /**
  * PHTS System - Finance Head Dashboard
  *
- * Dashboard for HEAD_FINANCE role - Step 5 approver
+ * Dashboard for HEAD_FINANCE role - Step 4 approver
  */
 
 'use client';
@@ -15,7 +15,7 @@ export default function FinanceHeadDashboard() {
       <ApproverDashboardContent
         title="รายการคำขอรออนุมัติ"
         subtitle="คำขอที่รอการพิจารณาจากหัวหน้าฝ่ายการเงิน"
-        stepNumber={5}
+        stepNumber={4}
       />
     </DashboardLayout>
   );

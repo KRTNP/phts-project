@@ -1,7 +1,7 @@
 /**
  * PHTS System - Director Dashboard
  *
- * Dashboard for DIRECTOR role - Step 4 approver
+ * Dashboard for DIRECTOR role - Step 5 approver
  */
 
 'use client';
@@ -15,7 +15,7 @@ export default function DirectorDashboard() {
       <ApproverDashboardContent
         title="รายการคำขอรออนุมัติ"
         subtitle="คำขอที่รอการพิจารณาจากผู้อำนวยการโรงพยาบาล"
-        stepNumber={4}
+        stepNumber={5}
       />
     </DashboardLayout>
   );
