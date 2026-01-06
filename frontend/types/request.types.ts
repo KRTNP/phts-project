@@ -82,7 +82,7 @@ export const STEP_ROLE_MAP: Record<number, string> = {
   1: 'HEAD_DEPT',
   2: 'PTS_OFFICER',
   3: 'HEAD_HR',
-  4: 'FINANCE',
+  4: 'HEAD_FINANCE',
   5: 'DIRECTOR',
 };
 
@@ -90,7 +90,7 @@ export const ROLE_STEP_MAP: Record<string, number> = {
   HEAD_DEPT: 1,
   PTS_OFFICER: 2,
   HEAD_HR: 3,
-  FINANCE: 4,
+  HEAD_FINANCE: 4,
   DIRECTOR: 5,
 };
 

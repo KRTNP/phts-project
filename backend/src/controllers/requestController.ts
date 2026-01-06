@@ -19,6 +19,7 @@ import {
 import * as requestService from '../services/requestService.js';
 import { findRecommendedRate, getAllActiveMasterRates } from '../services/classificationService.js';
 import { handleUploadError } from '../config/upload.js';
+import fs from 'fs';
 
 /**
  * Create a new PTS request
@@ -152,6 +153,20 @@ export async function createRequest(
     });
   } catch (error: any) {
     console.error('Create request error:', error);
+
+    // Cleanup uploaded files on failure
+    if (req.files) {
+      const uploadedFiles = req.files as { [fieldname: string]: Express.Multer.File[] };
+      Object.values(uploadedFiles)
+        .flat()
+        .forEach((file) => {
+          try {
+            fs.unlinkSync(file.path);
+          } catch (unlinkError) {
+            console.error(`Failed to delete file ${file.path}:`, unlinkError);
+          }
+        });
+    }
 
     // Handle file upload errors
     const uploadError = handleUploadError(error);
@@ -569,7 +584,7 @@ export async function approveBatch(
     }
 
     // Validate user is DIRECTOR or HEAD_FINANCE
-    const allowedRoles = ['DIRECTOR', 'HEAD_FINANCE'];
+    const allowedRoles = ['DIRECTOR', 'HEAD_FINANCE', 'FINANCE'];
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         success: false,

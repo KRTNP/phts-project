@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   approveByDirector,
   approveByHR,
+  approveByHeadFinance,
   calculatePeriod,
   getPeriodStatus,
   rejectPeriod,
@@ -45,6 +46,14 @@ router.post(
   protect,
   restrictTo(UserRole.DIRECTOR, UserRole.ADMIN),
   approveByDirector,
+);
+
+// Approve by Head Finance
+router.post(
+  '/period/:periodId/approve-head-finance',
+  protect,
+  restrictTo(UserRole.HEAD_FINANCE, UserRole.ADMIN),
+  approveByHeadFinance,
 );
 
 // Reject (HR/Director/Admin)

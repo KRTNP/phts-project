@@ -1,7 +1,6 @@
 /**
  * PHTS System - Authentication Types (Frontend)
- *
- * Mirrors backend types for type safety across the stack
+ * Mirrors backend types for type safety across the stack.
  */
 
 export enum UserRole {
@@ -12,6 +11,7 @@ export enum UserRole {
   DIRECTOR = 'DIRECTOR',
   FINANCE_OFFICER = 'FINANCE_OFFICER',
   HEAD_FINANCE = 'HEAD_FINANCE',
+  FINANCE = 'FINANCE',
   ADMIN = 'ADMIN',
 }
 
@@ -56,15 +56,16 @@ export interface ApiResponse<T = unknown> {
   token?: string;
 }
 
-// Role display names (Thai + English)
+// Role display names
 export const ROLE_NAMES: Record<UserRole, string> = {
   [UserRole.USER]: 'บุคลากรทั่วไป (General Staff)',
-  [UserRole.HEAD_DEPT]: 'หัวหน้าแผนก (Head of Department)',
-  [UserRole.PTS_OFFICER]: 'เจ้าหน้าที่ PTS (PTS Officer)',
+  [UserRole.HEAD_DEPT]: 'หัวหน้ากลุ่มงาน (Head of Department)',
+  [UserRole.PTS_OFFICER]: 'เจ้าหน้าที่ พ.ต.ส. (PTS Officer)',
   [UserRole.HEAD_HR]: 'หัวหน้าฝ่ายทรัพยากรบุคคล (Head of HR)',
   [UserRole.DIRECTOR]: 'ผู้อำนวยการโรงพยาบาล (Hospital Director)',
   [UserRole.FINANCE_OFFICER]: 'เจ้าหน้าที่การเงิน (Finance Officer)',
   [UserRole.HEAD_FINANCE]: 'หัวหน้าฝ่ายการเงิน (Head of Finance)',
+  [UserRole.FINANCE]: 'การเงิน (Finance)',
   [UserRole.ADMIN]: 'ผู้ดูแลระบบ (System Administrator)',
 };
 
@@ -77,5 +78,6 @@ export const ROLE_ROUTES: Record<UserRole, string> = {
   [UserRole.DIRECTOR]: '/dashboard/director',
   [UserRole.FINANCE_OFFICER]: '/dashboard/finance',
   [UserRole.HEAD_FINANCE]: '/dashboard/finance-head',
+  [UserRole.FINANCE]: '/dashboard/finance-head',
   [UserRole.ADMIN]: '/dashboard/admin',
 };

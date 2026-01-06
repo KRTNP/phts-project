@@ -7,6 +7,7 @@ export async function calculateRetroactive(
   currentYear: number,
   currentMonth: number,
   lookBackMonths = 6,
+  connection?: any,
 ): Promise<{ totalRetro: number; retroDetails: RetroDetail[] }> {
   let totalRetro = 0;
   const retroDetails: RetroDetail[] = [];
@@ -19,7 +20,9 @@ export async function calculateRetroactive(
       targetYear -= 1;
     }
 
-    const [periodRows] = await pool.query<RowDataPacket[]>(
+    const dbConn: any = connection ?? pool;
+
+    const [periodRows] = await dbConn.query<RowDataPacket[]>(
       `SELECT period_id, status FROM pts_periods WHERE period_month = ? AND period_year = ?`,
       [targetMonth, targetYear],
     );
@@ -27,13 +30,13 @@ export async function calculateRetroactive(
     const period = periodRows[0] as any;
     if (period.status && period.status !== 'CLOSED') continue;
 
-    const [payoutRows] = await pool.query<RowDataPacket[]>(
+    const [payoutRows] = await dbConn.query<RowDataPacket[]>(
       `SELECT calculated_amount FROM pts_payouts WHERE citizen_id = ? AND period_id = ?`,
       [citizenId, period.period_id],
     );
     const originalPaid = payoutRows.length ? Number((payoutRows[0] as any).calculated_amount) : 0;
 
-    const [adjustmentRows] = await pool.query<RowDataPacket[]>(
+    const [adjustmentRows] = await dbConn.query<RowDataPacket[]>(
       `
         SELECT pi.item_type, pi.amount
         FROM pts_payout_items pi
@@ -59,7 +62,12 @@ export async function calculateRetroactive(
 
     const paidAmount = originalPaid + historicalAdjustment;
 
-    const recalculated = await calculateMonthly(citizenId, targetYear, targetMonth);
+    const recalculated = await calculateMonthly(
+      citizenId,
+      targetYear,
+      targetMonth,
+      connection,
+    );
     const shouldBeAmount = recalculated.netPayment;
 
     const diff = parseFloat((shouldBeAmount - paidAmount).toFixed(2));

@@ -7,6 +7,7 @@
  * - Finalization creates eligibility records (no legacy rate_adjustments table)
  */
 
+import { randomUUID } from 'crypto';
 import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import { readFile } from 'fs/promises';
 import { query, getConnection } from '../config/database.js';
@@ -45,15 +46,12 @@ const REQUESTER_JOINS = `
 `;
 
 /**
- * Generate a lightweight running request number.
- * (Format: REQ-YY-XXXXXX; collisions are highly unlikely for single-node usage)
+ * Generate a unique request number.
  */
 function generateRequestNo(): string {
-  const year = new Date().getFullYear().toString().slice(-2);
-  const random = Math.floor(Math.random() * 1_000_000)
-    .toString()
-    .padStart(6, '0');
-  return `REQ-${year}-${random}`;
+  const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+  const randomPart = randomUUID().split('-')[0].substring(0, 4).toUpperCase();
+  return `REQ-${datePart}-${randomPart}`;
 }
 
 /**

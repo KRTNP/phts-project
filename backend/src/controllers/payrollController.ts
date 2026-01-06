@@ -79,6 +79,22 @@ export const approveByDirector = async (req: Request, res: Response) => {
   }
 };
 
+export const approveByHeadFinance = async (req: Request, res: Response) => {
+  try {
+    const { periodId } = req.params;
+    const actorId = (req.user as any)?.userId ?? (req.user as any)?.id;
+
+    const result = await PayrollService.updatePeriodStatus(
+      Number(periodId),
+      'APPROVE_HEAD_FINANCE',
+      actorId,
+    );
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const rejectPeriod = async (req: Request, res: Response) => {
   try {
     const { periodId } = req.params;

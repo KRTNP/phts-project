@@ -1,11 +1,13 @@
 import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import db from '../config/database.js';
+import { NotificationService } from './notificationService.js';
 import { payrollService as calculator } from './payroll/calculator.js';
 import { calculateRetroactive } from './payroll/retroactive.js';
 
 export enum PeriodStatus {
   OPEN = 'OPEN',
   WAITING_HR = 'WAITING_HR',
+  WAITING_HEAD_FINANCE = 'WAITING_HEAD_FINANCE',
   WAITING_DIRECTOR = 'WAITING_DIRECTOR',
   CLOSED = 'CLOSED',
 }
@@ -54,10 +56,10 @@ export class PayrollService {
     try {
       await conn.beginTransaction();
 
-      const [period] = await conn.query<RowDataPacket[]>(
-        'SELECT * FROM pts_periods WHERE period_id = ? FOR UPDATE',
-        [periodId],
-      );
+    const [period] = await conn.query<RowDataPacket[]>(
+      'SELECT * FROM pts_periods WHERE period_id = ? FOR UPDATE',
+      [periodId],
+    );
 
       if (!period.length) throw new Error('Period not found');
       if (period[0].status !== PeriodStatus.OPEN) {
@@ -84,8 +86,19 @@ export class PayrollService {
       for (const user of eligibleUsers) {
         const citizenId = user.citizen_id;
 
-        const currentResult = await calculator.calculateMonthly(citizenId, year, month);
-        const retroResult = await calculateRetroactive(citizenId, year, month);
+        const currentResult = await calculator.calculateMonthly(
+          citizenId,
+          year,
+          month,
+          conn as any,
+        );
+        const retroResult = await calculateRetroactive(
+          citizenId,
+          year,
+          month,
+          6,
+          conn as any,
+        );
 
         currentResult.retroactiveTotal = retroResult.totalRetro;
         currentResult.retroDetails = retroResult.retroDetails;
@@ -129,7 +142,7 @@ export class PayrollService {
    */
   static async updatePeriodStatus(
     periodId: number,
-    action: 'SUBMIT' | 'APPROVE_HR' | 'APPROVE_DIRECTOR' | 'REJECT',
+    action: 'SUBMIT' | 'APPROVE_HR' | 'APPROVE_HEAD_FINANCE' | 'APPROVE_DIRECTOR' | 'REJECT',
     _actorId: number,
   ) {
     const conn = await db.getConnection();
@@ -143,14 +156,41 @@ export class PayrollService {
       if (!rows.length) throw new Error('Period not found');
 
       const currentStatus = rows[0].status;
+      const year = rows[0].period_year;
+      const month = rows[0].period_month;
       let nextStatus: PeriodStatus | null = null;
 
       if (action === 'SUBMIT' && currentStatus === PeriodStatus.OPEN) {
         nextStatus = PeriodStatus.WAITING_HR;
+        await NotificationService.notifyRole(
+          'HEAD_HR',
+          'ตรวจสอบงวดเดือน',
+          `งวดเดือน ${month}/${year} รอการตรวจสอบจากท่าน`,
+        );
       } else if (action === 'APPROVE_HR' && currentStatus === PeriodStatus.WAITING_HR) {
+        nextStatus = PeriodStatus.WAITING_HEAD_FINANCE;
+        await NotificationService.notifyRole(
+          'HEAD_FINANCE',
+          'ตรวจสอบงวดเดือน',
+          `งวดเดือน ${month}/${year} ผ่านการตรวจสอบจาก HR แล้ว รอท่านอนุมัติ`,
+        );
+      } else if (
+        action === 'APPROVE_HEAD_FINANCE' &&
+        currentStatus === PeriodStatus.WAITING_HEAD_FINANCE
+      ) {
         nextStatus = PeriodStatus.WAITING_DIRECTOR;
+        await NotificationService.notifyRole(
+          'DIRECTOR',
+          'อนุมัติปิดงวดเดือน',
+          `สรุปยอดงวดเดือน ${month}/${year} รอการอนุมัติปิดงวด`,
+        );
       } else if (action === 'APPROVE_DIRECTOR' && currentStatus === PeriodStatus.WAITING_DIRECTOR) {
         nextStatus = PeriodStatus.CLOSED;
+        await NotificationService.notifyRole(
+          'FINANCE',
+          'งวดเดือนปิดแล้ว',
+          `งวดเดือน ${month}/${year} อนุมัติแล้ว สามารถดาวน์โหลดรายงานได้`,
+        );
       } else if (action === 'REJECT') {
         nextStatus = PeriodStatus.OPEN;
       } else {

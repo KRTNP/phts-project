@@ -130,8 +130,11 @@ export class SyncService {
           VALUES (?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE 
             password_hash = VALUES(password_hash),
-            role = VALUES(role),
             is_active = VALUES(is_active),
+            role = CASE 
+                    WHEN role IN ('ADMIN','OFFICER','PTS_OFFICER') THEN role 
+                    ELSE VALUES(role) 
+                   END,
             updated_at = NOW()
         `,
           [vUser.citizen_id, finalPass, vUser.role, vUser.is_active],

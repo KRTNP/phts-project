@@ -61,13 +61,15 @@ export async function calculateMonthly(
   citizenId: string,
   year: number,
   month: number,
+  connection?: PoolConnection,
 ): Promise<CalculationResult> {
+  const dbConn: Pick<PoolConnection, 'query'> = connection ?? pool;
   const startOfMonth = makeLocalDate(year, month - 1, 1);
   const endOfMonth = makeLocalDate(year, month, 0);
   const daysInMonth = endOfMonth.getDate();
   const fiscalYear = month >= 10 ? year + 1 + 543 : year + 543;
 
-  const [eligibilityRows] = await pool.query<RowDataPacket[]>(
+  const [eligibilityRows] = await dbConn.query<RowDataPacket[]>(
     `
       SELECT e.effective_date, e.expiry_date, m.amount as rate, m.rate_id
       FROM pts_employee_eligibility e
@@ -80,7 +82,7 @@ export async function calculateMonthly(
     [citizenId, endOfMonth, startOfMonth],
   );
 
-  const [movementRows] = await pool.query<RowDataPacket[]>(
+  const [movementRows] = await dbConn.query<RowDataPacket[]>(
     `
       SELECT * FROM pts_employee_movements 
       WHERE citizen_id = ? AND effective_date <= ?
@@ -89,17 +91,17 @@ export async function calculateMonthly(
     [citizenId, endOfMonth],
   );
 
-  const [employeeRows] = await pool.query<RowDataPacket[]>(
+  const [employeeRows] = await dbConn.query<RowDataPacket[]>(
     `SELECT position_name FROM pts_employees WHERE citizen_id = ? LIMIT 1`,
     [citizenId],
   );
 
-  const [licenseRows] = await pool.query<RowDataPacket[]>(
+  const [licenseRows] = await dbConn.query<RowDataPacket[]>(
     `SELECT * FROM pts_employee_licenses WHERE citizen_id = ?`,
     [citizenId],
   );
 
-  const [leaveRows] = await pool.query<RowDataPacket[]>(
+  const [leaveRows] = await dbConn.query<RowDataPacket[]>(
     `
       SELECT * FROM pts_leave_requests 
       WHERE citizen_id = ? AND fiscal_year = ?
@@ -108,12 +110,12 @@ export async function calculateMonthly(
     [citizenId, fiscalYear],
   );
 
-  const [quotaRows] = await pool.query<RowDataPacket[]>(
+  const [quotaRows] = await dbConn.query<RowDataPacket[]>(
     `SELECT * FROM pts_leave_quotas WHERE citizen_id = ? AND fiscal_year = ?`,
     [citizenId, fiscalYear],
   );
 
-  const [holidayRows] = await pool.query<RowDataPacket[]>(
+  const [holidayRows] = await dbConn.query<RowDataPacket[]>(
     `SELECT holiday_date FROM pts_holidays WHERE holiday_date BETWEEN ? AND ?`,
     [`${year - 1}-01-01`, `${year}-12-31`],
   );
