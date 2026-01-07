@@ -38,6 +38,7 @@ import GestureIcon from '@mui/icons-material/Gesture';
 import CheckIcon from '@mui/icons-material/Check';
 import HistoryIcon from '@mui/icons-material/History';
 import EditIcon from '@mui/icons-material/Edit';
+import Refresh from '@mui/icons-material/Refresh';
 import { SignatureApi, SignatureData } from '@/lib/api/signatureApi';
 
 type SignatureMode = 'draw' | 'stored';
@@ -577,9 +578,10 @@ export default function SignaturePad({
       {/* Action buttons - hidden on print */}
       <Box
         sx={{
-          mt: 1,
+          mt: 2,
           display: 'flex',
-          gap: 1,
+          justifyContent: 'center',
+          gap: 2,
           '@media print': {
             display: 'none',
           },
@@ -589,11 +591,12 @@ export default function SignaturePad({
           size="small"
           variant="outlined"
           color="error"
-          startIcon={<DeleteOutlineIcon />}
+          startIcon={<Refresh />}
           onClick={clearSignature}
           disabled={!hasSignature || disabled}
+          sx={{ borderRadius: 2, px: 2 }}
         >
-          ล้าง
+          ล้างลายเซ็น
         </Button>
       </Box>
     </Box>

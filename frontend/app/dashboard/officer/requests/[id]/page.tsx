@@ -17,15 +17,16 @@ import {
   Container,
   Snackbar,
 } from '@mui/material';
-import { ArrowBack, CheckCircle, Cancel, Undo, Description } from '@mui/icons-material';
+import { CheckCircle, Cancel, Undo, Description } from '@mui/icons-material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import StatusChip from '@/components/common/StatusChip';
 import FilePreviewList from '@/components/common/FilePreviewList';
+import BackButton from '@/components/common/BackButton';
 import * as requestApi from '@/lib/api/requestApi';
 import { RequestWithDetails, PERSONNEL_TYPE_LABELS, REQUEST_TYPE_LABELS, WORK_ATTRIBUTE_LABELS } from '@/types/request.types';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import ApprovalDialog, { ApprovalAction } from '@/components/requests/ApprovalDialog';
+import ApprovalDialog from '@/components/requests/ApprovalDialog';
 
 export default function OfficerRequestDetailPage() {
   const params = useParams();
@@ -37,8 +38,7 @@ export default function OfficerRequestDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [currentAction, setCurrentAction] = useState<ApprovalAction>('approve');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentAction, setCurrentAction] = useState<'APPROVE' | 'REJECT' | 'RETURN'>('APPROVE');
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -59,22 +59,21 @@ export default function OfficerRequestDetailPage() {
     if (requestId) fetchRequest();
   }, [requestId]);
 
-  const handleAction = (action: ApprovalAction) => {
+  const handleAction = (action: 'APPROVE' | 'REJECT' | 'RETURN') => {
     setCurrentAction(action);
     setDialogOpen(true);
   };
 
   const handleConfirmAction = async (comment: string) => {
     if (!request) return;
-    setIsSubmitting(true);
     try {
-      if (currentAction === 'approve') {
+      if (currentAction === 'APPROVE') {
         await requestApi.approveRequest(request.request_id, comment);
         setToast({ open: true, message: 'บันทึกผลการตรวจสอบเรียบร้อยแล้ว', severity: 'success' });
-      } else if (currentAction === 'reject') {
+      } else if (currentAction === 'REJECT') {
         await requestApi.rejectRequest(request.request_id, comment);
         setToast({ open: true, message: 'ปฏิเสธคำขอเรียบร้อยแล้ว', severity: 'success' });
-      } else if (currentAction === 'return') {
+      } else if (currentAction === 'RETURN') {
         await requestApi.returnRequest(request.request_id, comment);
         setToast({ open: true, message: 'ส่งคืนคำขอแก้ไขเรียบร้อยแล้ว', severity: 'success' });
       }
@@ -83,8 +82,6 @@ export default function OfficerRequestDetailPage() {
       setTimeout(() => router.push('/dashboard/officer'), 1500);
     } catch (err: any) {
       setToast({ open: true, message: err.message || 'เกิดข้อผิดพลาด', severity: 'error' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -133,9 +130,7 @@ export default function OfficerRequestDetailPage() {
     <DashboardLayout title={`ตรวจสอบความถูกต้อง: ${request.request_no || `#${request.request_id}`}`}>
       <Container maxWidth="lg" sx={{ py: 3, pb: 10 }}>
         <Stack direction="row" alignItems="center" spacing={2} mb={3}>
-          <Button startIcon={<ArrowBack />} onClick={() => router.back()} sx={{ fontWeight: 600 }}>
-            ย้อนกลับ
-          </Button>
+          <BackButton to="/dashboard/officer" />
           <Typography variant="h6" fontWeight={700} flexGrow={1}>
             รายละเอียดคำขอ (สำหรับเจ้าหน้าที่)
           </Typography>
@@ -299,17 +294,17 @@ export default function OfficerRequestDetailPage() {
           gap: 2,
         }}
       >
-        <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={() => handleAction('reject')}>
+        <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={() => handleAction('REJECT')}>
           ปฏิเสธคำขอ
         </Button>
-        <Button variant="outlined" color="info" startIcon={<Undo />} onClick={() => handleAction('return')}>
+        <Button variant="outlined" color="info" startIcon={<Undo />} onClick={() => handleAction('RETURN')}>
           ส่งแก้ไข
         </Button>
         <Button
           variant="contained"
           color="success"
           startIcon={<CheckCircle />}
-          onClick={() => handleAction('approve')}
+          onClick={() => handleAction('APPROVE')}
           sx={{ px: 4, fontWeight: 700 }}
         >
           ยืนยันความถูกต้อง
@@ -319,10 +314,8 @@ export default function OfficerRequestDetailPage() {
       <ApprovalDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        request={request}
-        action={currentAction}
+        type={currentAction}
         onConfirm={handleConfirmAction}
-        isSubmitting={isSubmitting}
       />
 
       <Snackbar

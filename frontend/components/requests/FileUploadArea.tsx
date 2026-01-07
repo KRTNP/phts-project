@@ -148,31 +148,34 @@ export default function FileUploadArea({
           textAlign: 'center',
           borderStyle: 'dashed',
           borderWidth: 2,
+          borderRadius: 2,
           borderColor: isDragging ? 'primary.main' : 'divider',
-          backgroundColor: isDragging ? 'action.hover' : 'background.paper',
+          backgroundColor: isDragging ? (theme) => theme.palette.primary.main + '14' : 'background.paper',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'all 0.3s ease',
+          boxShadow: isDragging ? '0 4px 12px rgba(0, 108, 156, 0.2)' : 'none',
           '&:hover': {
             borderColor: 'primary.main',
-            backgroundColor: 'action.hover',
+            backgroundColor: (theme) => theme.palette.primary.main + '08',
+            boxShadow: '0 4px 12px rgba(0, 108, 156, 0.15)',
           },
         }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => inputRef.current?.click()}
-    >
-      <input
-        id={inputId}
-        type="file"
-        multiple
-        accept=".pdf,.jpg,.jpeg,.png"
-        style={{ display: 'none' }}
-        ref={inputRef}
-        onChange={(e) => handleFileSelect(e.target.files)}
-      />
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          id={inputId}
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png"
+          style={{ display: 'none' }}
+          ref={inputRef}
+          onChange={(e) => handleFileSelect(e.target.files)}
+        />
         <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-        <Typography variant="body1" fontWeight={500} gutterBottom>
+        <Typography variant="body1" fontWeight={600} gutterBottom>
           คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่
         </Typography>
         <Typography variant="caption" color="text.secondary">

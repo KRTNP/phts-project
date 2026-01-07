@@ -7,13 +7,9 @@ import {
   Button,
   Container,
   Typography,
-  Card,
-  CardContent,
   Stack,
-  Avatar,
   CircularProgress,
   Alert,
-  Paper,
 } from '@mui/material';
 import {
   Add,
@@ -24,12 +20,16 @@ import {
 } from '@mui/icons-material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RequestStatusTable from '@/components/requests/RequestStatusTable';
+import StatCard from '@/components/dashboard/StatCard';
 import * as requestApi from '@/lib/api/requestApi';
+import { AuthService } from '@/lib/api/authApi';
+import { UserProfile } from '@/types/auth';
 import { RequestWithDetails, RequestStatus } from '@/types/request.types';
 
 export default function UserDashboard() {
   const router = useRouter();
   const [requests, setRequests] = useState<RequestWithDetails[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,45 +73,12 @@ export default function UserDashboard() {
   };
 
   useEffect(() => {
+    // ดึงข้อมูล User เมื่อโหลดหน้าเว็บ
+    const currentUser = AuthService.getCurrentUser();
+    setUser(currentUser);
+
     fetchRequests();
   }, []);
-
-  const StatCard = ({
-    title,
-    value,
-    color,
-    icon,
-  }: {
-    title: string;
-    value: number | string;
-    color: string;
-    icon: React.ReactNode;
-  }) => (
-    <Card sx={{ borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-      <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Box>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ opacity: 0.7 }}>
-              {title}
-            </Typography>
-            <Typography variant="h3" fontWeight={700} color={color}>
-              {value}
-            </Typography>
-          </Box>
-          <Avatar
-            sx={{
-              bgcolor: `${color}22`,
-              color,
-              width: 56,
-              height: 56,
-            }}
-          >
-            {icon}
-          </Avatar>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <DashboardLayout title="ระบบยื่นคำขอรับเงิน พ.ต.ส.">
@@ -124,11 +91,11 @@ export default function UserDashboard() {
           spacing={2}
         >
           <Box>
-            <Typography variant="h4" fontWeight={700} color="primary.dark" gutterBottom>
-              รายการคำขอของฉัน
+            <Typography variant="h4" fontWeight={700} color="primary.main" gutterBottom>
+              สวัสดี, คุณ{user ? `${user.first_name} ${user.last_name}` : '...'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              ติดตามสถานะและประวัติการยื่นคำขอทั้งหมด
+              ติดตามสถานะและประวัติการยื่นคำขอทั้งหมดของคุณได้ที่นี่
             </Typography>
           </Box>
           <Button
@@ -137,11 +104,12 @@ export default function UserDashboard() {
             startIcon={<Add />}
             onClick={() => router.push('/dashboard/user/request')}
             sx={{
-              borderRadius: 3,
               px: 4,
               py: 1.5,
-              fontWeight: 700,
-              boxShadow: '0 8px 16px rgba(25, 118, 210, 0.24)',
+              borderRadius: 2,
+              fontWeight: 600,
+              boxShadow: '0 8px 16px rgba(0, 108, 156, 0.24)',
+              background: 'linear-gradient(45deg, #006C9C 30%, #009688 90%)',
             }}
           >
             ยื่นคำขอใหม่
@@ -151,28 +119,28 @@ export default function UserDashboard() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0,1fr))' },
-            gap: 2,
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+            gap: 3,
             mb: 4,
           }}
         >
           <StatCard
             title="คำขอทั้งหมด"
             value={loading ? '...' : stats.total}
-            color="#1976D2"
-            icon={<Description />}
+            color="primary"
+            icon={<Description fontSize="large" />}
           />
           <StatCard
             title="รอดำเนินการ"
             value={loading ? '...' : stats.pending}
-            color="#ED6C02"
-            icon={<PendingActions />}
+            color="warning"
+            icon={<PendingActions fontSize="large" />}
           />
           <StatCard
             title="เสร็จสิ้น"
             value={loading ? '...' : stats.completed}
-            color="#2E7D32"
-            icon={<CheckCircleOutline />}
+            color="success"
+            icon={<CheckCircleOutline fontSize="large" />}
           />
         </Box>
 
@@ -189,15 +157,10 @@ export default function UserDashboard() {
             <Stack direction="row" alignItems="center" spacing={1} mb={2}>
               <Assignment color="primary" />
               <Typography variant="h6" fontWeight={700}>
-                รายการล่าสุด
+                รายการคำขอ
               </Typography>
             </Stack>
-            <Paper
-              variant="outlined"
-              sx={{ borderRadius: 2, overflow: 'hidden', borderColor: 'divider' }}
-            >
-              <RequestStatusTable requests={requests} />
-            </Paper>
+            <RequestStatusTable requests={requests} />
           </Box>
         )}
       </Container>

@@ -455,6 +455,37 @@ export async function getPendingForApprover(userRole: string): Promise<RequestWi
 }
 
 /**
+ * Get approval history for a specific actor (approver).
+ */
+export async function getApprovalHistory(actorId: number): Promise<RequestWithDetails[]> {
+  const historyIds = await query<RowDataPacket[]>(
+    `SELECT request_id, MAX(created_at) as last_action_date
+     FROM pts_request_actions
+     WHERE actor_id = ?
+       AND action IN ('APPROVE', 'REJECT', 'RETURN')
+     GROUP BY request_id
+     ORDER BY last_action_date DESC`,
+    [actorId],
+  );
+
+  const requestRows = Array.isArray(historyIds) ? (historyIds as any[]) : [];
+  if (requestRows.length === 0) return [];
+
+  const { clause, params } = buildInClause(requestRows.map((row) => row.request_id));
+
+  const fullRequests = await query<RowDataPacket[]>(
+    `SELECT ${REQUESTER_FIELDS}
+     FROM pts_requests r
+     ${REQUESTER_JOINS}
+     WHERE r.request_id IN (${clause})
+     ORDER BY r.updated_at DESC`,
+    params,
+  );
+
+  return await hydrateRequests(Array.isArray(fullRequests) ? fullRequests : []);
+}
+
+/**
  * Get full request details by ID with access control
  */
 export async function getRequestById(

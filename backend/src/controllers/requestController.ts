@@ -133,7 +133,7 @@ export async function createRequest(
 
     const [empRows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM pts_employees WHERE citizen_id = ?`,
-      [req.user.citizenId]
+      [req.user.citizenId],
     );
 
     if (!empRows.length) {
@@ -343,6 +343,40 @@ export async function getPendingApprovals(
     res.status(statusCode).json({
       success: false,
       error: error.message || 'An error occurred while fetching pending approvals',
+    });
+  }
+}
+
+/**
+ * Get approval history for the current approver
+ *
+ * @route GET /api/requests/history
+ * @access Protected (Approvers only)
+ */
+export async function getHistory(
+  req: Request,
+  res: Response<ApiResponse<RequestWithDetails[]>>
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: 'Unauthorized access',
+      });
+      return;
+    }
+
+    const history = await requestService.getApprovalHistory(req.user.userId);
+
+    res.status(200).json({
+      success: true,
+      data: history,
+    });
+  } catch (error: any) {
+    console.error('Get approval history error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'An error occurred while fetching approval history',
     });
   }
 }
@@ -725,7 +759,7 @@ export async function getPreClassification(req: Request, res: Response): Promise
 
     const [empRows] = await pool.query<RowDataPacket[]>(
       `SELECT *, start_work_date FROM pts_employees WHERE citizen_id = ?`,
-      [user.citizenId]
+      [user.citizenId],
     );
 
     if (empRows.length === 0) {

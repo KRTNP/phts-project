@@ -69,6 +69,20 @@ router.get(
   requestController.getPendingApprovals
 );
 
+// Get approval history for current approver
+router.get(
+  '/history',
+  restrictTo(
+    UserRole.HEAD_DEPT,
+    UserRole.PTS_OFFICER,
+    UserRole.HEAD_HR,
+    UserRole.HEAD_FINANCE,
+    UserRole.DIRECTOR,
+    UserRole.ADMIN
+  ),
+  requestController.getHistory
+);
+
 // Get request details by ID
 router.get(
   '/:id',

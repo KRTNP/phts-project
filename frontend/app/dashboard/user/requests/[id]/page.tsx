@@ -4,22 +4,21 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   Box,
   Paper,
   Typography,
   Divider,
-  Button,
   Stack,
   CircularProgress,
   Alert,
   Container,
 } from '@mui/material';
-import { ArrowBack, Edit } from '@mui/icons-material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import StatusChip from '@/components/common/StatusChip';
 import FilePreviewList from '@/components/common/FilePreviewList';
+import BackButton from '@/components/common/BackButton';
 import * as requestApi from '@/lib/api/requestApi';
 import {
   RequestWithDetails,
@@ -32,7 +31,6 @@ import { th } from 'date-fns/locale';
 
 export default function RequestDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const requestId = Number(params.id);
 
   const [request, setRequest] = useState<RequestWithDetails | null>(null);
@@ -104,9 +102,7 @@ export default function RequestDetailPage() {
     <DashboardLayout title={`รายละเอียดคำขอ: ${request.request_no || `#${request.request_id}`}`}>
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Box mb={3}>
-          <Button startIcon={<ArrowBack />} onClick={() => router.back()} sx={{ fontWeight: 600, px: 0 }}>
-            ย้อนกลับ
-          </Button>
+          <BackButton to="/dashboard/user" label="กลับไปหน้าหลัก" />
         </Box>
 
         {showWarning && (

@@ -31,7 +31,7 @@ import { CheckCircle, Cancel, Undo, Visibility, Person, AccessTime, AttachMoney,
 import { useRouter } from 'next/navigation';
 import { RequestWithDetails, REQUEST_TYPE_LABELS } from '@/types/request.types';
 import StatusChip from '@/components/common/StatusChip';
-import ApprovalDialog, { ApprovalAction } from './ApprovalDialog';
+import ApprovalDialog from './ApprovalDialog';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 
@@ -68,7 +68,7 @@ export default function ApprovalList({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<RequestWithDetails | null>(null);
-  const [currentAction, setCurrentAction] = useState<ApprovalAction>('approve');
+  const [currentAction, setCurrentAction] = useState<'APPROVE' | 'REJECT' | 'RETURN'>('APPROVE');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
@@ -114,7 +114,7 @@ export default function ApprovalList({
 
   const isSelected = (id: number) => selectedIds.indexOf(id) !== -1;
 
-  const handleOpenDialog = (request: RequestWithDetails, action: ApprovalAction) => {
+  const handleOpenDialog = (request: RequestWithDetails, action: 'APPROVE' | 'REJECT' | 'RETURN') => {
     setSelectedRequest(request);
     setCurrentAction(action);
     setDialogOpen(true);
@@ -131,9 +131,9 @@ export default function ApprovalList({
     if (!selectedRequest) return;
     setIsSubmitting(true);
     try {
-      if (currentAction === 'approve') await onApprove(selectedRequest.request_id, comment);
-      else if (currentAction === 'reject') await onReject(selectedRequest.request_id, comment);
-      else if (currentAction === 'return') await onReturn(selectedRequest.request_id, comment);
+      if (currentAction === 'APPROVE') await onApprove(selectedRequest.request_id, comment);
+      else if (currentAction === 'REJECT') await onReject(selectedRequest.request_id, comment);
+      else if (currentAction === 'RETURN') await onReturn(selectedRequest.request_id, comment);
 
       handleCloseDialog();
       onRefresh?.();
@@ -276,7 +276,7 @@ export default function ApprovalList({
                       variant="contained"
                       color="success"
                       fullWidth
-                      onClick={() => handleOpenDialog(req, 'approve')}
+                      onClick={() => handleOpenDialog(req, 'APPROVE')}
                       startIcon={<CheckCircle />}
                       disableElevation
                     >
@@ -286,7 +286,7 @@ export default function ApprovalList({
                       variant="outlined"
                       color="error"
                       sx={{ minWidth: 40 }}
-                      onClick={() => handleOpenDialog(req, 'reject')}
+                      onClick={() => handleOpenDialog(req, 'REJECT')}
                     >
                       <Cancel />
                     </Button>
@@ -300,11 +300,9 @@ export default function ApprovalList({
         {showQuickActions && (
           <ApprovalDialog
             open={dialogOpen}
+            type={currentAction}
             onClose={handleCloseDialog}
-            request={selectedRequest}
-            action={currentAction}
             onConfirm={handleConfirm}
-            isSubmitting={isSubmitting}
           />
         )}
       </Stack>
@@ -397,7 +395,7 @@ export default function ApprovalList({
                             size="small"
                             color="success"
                             sx={{ bgcolor: 'success.lighter', '&:hover': { bgcolor: 'success.light' } }}
-                            onClick={() => handleOpenDialog(req, 'approve')}
+                            onClick={() => handleOpenDialog(req, 'APPROVE')}
                           >
                             <CheckCircle />
                           </IconButton>
@@ -407,7 +405,7 @@ export default function ApprovalList({
                             size="small"
                             color="error"
                             sx={{ bgcolor: 'error.lighter', '&:hover': { bgcolor: 'error.light' } }}
-                            onClick={() => handleOpenDialog(req, 'return')}
+                            onClick={() => handleOpenDialog(req, 'RETURN')}
                           >
                             <Undo />
                           </IconButton>
@@ -426,11 +424,9 @@ export default function ApprovalList({
       {showQuickActions && (
         <ApprovalDialog
           open={dialogOpen}
+          type={currentAction}
           onClose={handleCloseDialog}
-          request={selectedRequest}
-          action={currentAction}
           onConfirm={handleConfirm}
-          isSubmitting={isSubmitting}
         />
       )}
     </>

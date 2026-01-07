@@ -235,3 +235,20 @@ export async function batchApproveRequests(
     throw new Error(extractErrorMessage(error, 'Batch approval failed'));
   }
 }
+
+/**
+ * Get approval history for the current approver
+ */
+export async function getApprovalHistory(): Promise<PTSRequest[]> {
+  try {
+    const response = await apiClient.get<ApiResponse<PTSRequest[]>>('/api/requests/history');
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to fetch approval history');
+    }
+
+    return response.data.data || [];
+  } catch (error: unknown) {
+    throw new Error(extractErrorMessage(error, 'Unable to fetch approval history'));
+  }
+}

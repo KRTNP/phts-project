@@ -1,23 +1,46 @@
 /**
  * PTS Officer Dashboard
- * Uses shared ApproverDashboardContent but forces detail-first (no quick actions)
+ * Multi-tab dashboard with approval review and payroll management
  */
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import ApproverDashboardContent from '@/components/requests/ApproverDashboard';
+import { Box, Tab, Tabs, Typography } from '@mui/material';
+import ApproverDashboard from '@/components/requests/ApproverDashboard';
+import ApprovalHistoryList from '@/components/requests/ApprovalHistoryList';
+import PayrollManager from '@/components/payroll/PayrollManager';
+import { VerifiedUser, Paid, History } from '@mui/icons-material';
 
 export default function OfficerDashboard() {
+  const [currentTab, setCurrentTab] = useState(0);
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
   return (
-    <DashboardLayout title="แดชบอร์ดเจ้าหน้าที่ PTS (PTS Officer)">
-      <ApproverDashboardContent
-        title="รายการคำขอรอตรวจสอบ"
-        subtitle="คำขอที่รอการพิจารณาตรวจสอบความถูกต้อง (ขั้นตอนที่ 2)"
-        stepNumber={2}
-        allowQuickActions={false}
-        basePath="/dashboard/officer/requests"
-      />
+    <DashboardLayout title="สำหรับเจ้าหน้าที่ พ.ต.ส.">
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          แดชบอร์ดเจ้าหน้าที่ พ.ต.ส.
+        </Typography>
+        <Typography color="text.secondary">
+          ตรวจสอบความถูกต้องของคำขอ และบริหารจัดการงวดเดือน (Step 2)
+        </Typography>
+      </Box>
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="officer tabs">
+          <Tab icon={<VerifiedUser />} iconPosition="start" label="รายการรอตรวจสอบ" />
+          <Tab icon={<Paid />} iconPosition="start" label="จัดการงวดเดือน" />
+          <Tab icon={<History />} iconPosition="start" label="ประวัติการดำเนินการ" />
+        </Tabs>
+      </Box>
+
+      {currentTab === 0 && <ApproverDashboard />}
+      {currentTab === 1 && <PayrollManager />}
+      {currentTab === 2 && <ApprovalHistoryList />}
     </DashboardLayout>
   );
 }

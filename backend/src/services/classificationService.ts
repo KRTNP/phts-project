@@ -43,7 +43,7 @@ function includesAny(value: string, patterns: string[]): boolean {
  */
 export async function findRecommendedRate(citizenId: string): Promise<MasterRate | null> {
   const rows = await query<RowDataPacket[]>(
-    `SELECT citizen_id, position_name, specialist, expert, sub_department 
+    `SELECT citizen_id, position_name, specialist, expert, sub_department
      FROM pts_employees WHERE citizen_id = ?`,
     [citizenId],
   );

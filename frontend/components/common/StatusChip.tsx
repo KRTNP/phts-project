@@ -6,76 +6,41 @@
 
 'use client';
 
-import React from 'react';
 import { Chip, ChipProps } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { RequestStatus, REQUEST_STATUS_LABELS } from '@/types/request.types';
-import {
-  CheckCircle,
-  Cancel,
-  HourglassEmpty,
-  AssignmentReturn,
-  Drafts,
-} from '@mui/icons-material';
 
 interface StatusChipProps extends ChipProps {
   status: RequestStatus | string;
 }
 
-export default function StatusChip({ status, sx, color, size = 'medium', ...props }: StatusChipProps) {
+const STATUS_COLOR_MAP: Record<string, ChipProps['color']> = {
+  [RequestStatus.DRAFT]: 'default',
+  [RequestStatus.PENDING]: 'warning',
+  [RequestStatus.APPROVED]: 'success',
+  [RequestStatus.REJECTED]: 'error',
+  [RequestStatus.RETURNED]: 'warning',
+  [RequestStatus.CANCELLED]: 'default',
+};
+
+export default function StatusChip({ status, sx, color, size = 'small', ...props }: StatusChipProps) {
   const theme = useTheme();
-
-  let chipColor: ChipProps['color'] = color ?? 'default';
-  let icon: React.ReactNode = undefined;
+  const chipColor: ChipProps['color'] = color ?? STATUS_COLOR_MAP[status] ?? 'default';
   const label: React.ReactNode = REQUEST_STATUS_LABELS[status as RequestStatus] || status;
-
-  switch (status) {
-    case RequestStatus.APPROVED:
-      chipColor = color ?? 'success';
-      icon = <CheckCircle />;
-      break;
-    case RequestStatus.REJECTED:
-      chipColor = color ?? 'error';
-      icon = <Cancel />;
-      break;
-    case RequestStatus.PENDING:
-      chipColor = color ?? 'warning';
-      icon = <HourglassEmpty />;
-      break;
-    case RequestStatus.DRAFT:
-      chipColor = color ?? 'default';
-      icon = <Drafts />;
-      break;
-    case RequestStatus.RETURNED:
-      chipColor = color ?? 'warning';
-      icon = <AssignmentReturn />;
-      break;
-    case RequestStatus.CANCELLED:
-      chipColor = color ?? 'default';
-      icon = <Cancel />;
-      break;
-    default:
-      break;
-  }
+  const isDefault = chipColor === 'default';
 
   return (
     <Chip
       label={label}
-      icon={icon}
-      color={chipColor}
       size={size}
-      variant="filled"
       sx={{
-        fontWeight: 700,
-        borderRadius: 2,
-        px: 1,
-        '& .MuiChip-label': {
-          px: 1,
-        },
-        ...(chipColor === 'default' && {
-          backgroundColor: theme.palette.grey[400],
-          color: theme.palette.common.white,
-        }),
+        fontWeight: 600,
+        borderRadius: '8px',
+        backgroundColor: isDefault
+          ? theme.palette.grey[200]
+          : alpha(theme.palette[chipColor].main, 0.16),
+        color: isDefault ? theme.palette.grey[800] : theme.palette[chipColor].dark,
+        border: 'none',
         ...sx,
       }}
       {...props}

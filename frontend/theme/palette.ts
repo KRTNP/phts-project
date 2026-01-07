@@ -8,24 +8,24 @@
  * Background: Light Gray (#F4F6F8) - Reduces eye strain for long sessions
  */
 
-import { PaletteOptions } from '@mui/material/styles';
+import { PaletteOptions, alpha } from '@mui/material/styles';
 
 // New medical/enterprise blue palette
 const primary = {
-  lighter: '#D1E9FC',
-  light: '#76B0F1',
-  main: '#1976D2',
-  dark: '#0D47A1',
-  darker: '#082A66',
+  lighter: '#D0E6F7',
+  light: '#6CA6E0',
+  main: '#006C9C',
+  dark: '#004B75',
+  darker: '#002D4A',
   contrastText: '#FFFFFF',
 };
 
 const secondary = {
-  lighter: '#D6E4FF',
-  light: '#84A9FF',
-  main: '#3366FF',
-  dark: '#1939B7',
-  darker: '#091A7A',
+  lighter: '#E6F4F1',
+  light: '#85C7BC',
+  main: '#009688',
+  dark: '#00695F',
+  darker: '#003D38',
   contrastText: '#FFFFFF',
 };
 
@@ -47,10 +47,28 @@ const success = {
   contrastText: '#212B36',
 };
 
+const info = {
+  lighter: '#D0F2FF',
+  light: '#74CAFF',
+  main: '#1890FF',
+  dark: '#0C53B7',
+  darker: '#04297A',
+  contrastText: '#FFFFFF',
+};
+
+const warning = {
+  lighter: '#FFF7CD',
+  light: '#FFE16A',
+  main: '#FFB020',
+  dark: '#B78103',
+  darker: '#7A4F01',
+  contrastText: '#212B36',
+};
+
 const grey = {
   0: '#FFFFFF',
-  100: '#F9FAFB',
-  200: '#F4F6F8',
+  100: '#F8F9FA',
+  200: '#F1F3F5',
   300: '#DFE3E8',
   400: '#C4CDD5',
   500: '#919EAB',
@@ -65,15 +83,17 @@ export const palette: PaletteOptions = {
   secondary,
   error,
   success,
+  info,
+  warning,
   grey,
   text: {
     primary: grey[800],
-    secondary: grey[700],
+    secondary: grey[600],
     disabled: grey[500],
   },
   background: {
     default: '#F4F6F8',
     paper: '#FFFFFF',
   },
-  divider: grey[300],
+  divider: alpha(grey[500], 0.2),
 };
