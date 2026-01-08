@@ -56,44 +56,90 @@ export function calculateDeductions(
     if (!rule) continue;
 
     let limit = rule.limit;
-    if (type === 'vacation') limit = Number(quota.quota_vacation ?? 10);
-    if (type === 'personal') limit = Number(quota.quota_personal ?? 45);
-    if (type === 'sick') limit = Number(quota.quota_sick ?? 60);
-    const isHalfDay = leave.duration_days === 0.5;
+    if (type === 'vacation') {
+      limit = quota.quota_vacation !== null && quota.quota_vacation !== undefined
+        ? Number(quota.quota_vacation)
+        : limit;
+    }
+    if (type === 'personal') {
+      limit = quota.quota_personal !== null && quota.quota_personal !== undefined
+        ? Number(quota.quota_personal)
+        : limit;
+    }
+    if (type === 'sick') {
+      limit = quota.quota_sick !== null && quota.quota_sick !== undefined
+        ? Number(quota.quota_sick)
+        : limit;
+    }
+    const isHalfDay = leave.duration_days > 0 && leave.duration_days < 1;
 
     let duration = 0;
-    if (rule.unit === 'business_days') {
+    if (isHalfDay) {
+      const dateStr = formatLocalDate(start);
+      const isHol = isHoliday(dateStr, holidays);
+      const isWeekend = start.getDay() === 0 || start.getDay() === 6;
+      if (!isHol && !isWeekend) duration = 0.5;
+    } else if (rule.unit === 'business_days') {
       duration = countBusinessDays(start, end, holidays);
     } else {
       duration = countCalendarDays(start, end);
     }
-    if (isHalfDay) duration = 0.5;
 
     const currentUsage = usage[type] || 0;
-    const remaining = limit === null ? Number.POSITIVE_INFINITY : Math.max(0, limit - currentUsage);
 
     if (rule.rule_type === 'cumulative') {
       usage[type] = currentUsage + duration;
     }
 
-    if (duration > remaining) {
-      const exceedAmount = duration - remaining;
+    if (limit !== null && currentUsage + duration > limit) {
+      const remainingQuota = Math.max(0, limit - currentUsage);
+      let exceedDate: Date | null = null;
 
-      let deductCount = 0;
-      const cursor = new Date(end);
-      while (deductCount < exceedAmount && cursor >= start) {
-        const dateStr = formatLocalDate(cursor);
-        const isHol = isHoliday(dateStr, holidays);
-        const isWeekend = cursor.getDay() === 0 || cursor.getDay() === 6;
-
-        if (rule.unit === 'calendar_days' || (!isHol && !isWeekend)) {
-          if (cursor >= monthStart && cursor <= monthEnd) {
-            const weight = isHalfDay ? 0.5 : 1;
-            deductionMap.set(dateStr, (deductionMap.get(dateStr) || 0) + weight);
-          }
-          deductCount += isHalfDay ? 0.5 : 1;
+      if (isHalfDay) {
+        if (duration > 0 && remainingQuota < 0.5) {
+          exceedDate = start;
         }
-        cursor.setDate(cursor.getDate() - 1);
+      } else if (rule.unit === 'calendar_days') {
+        exceedDate = new Date(start);
+        exceedDate.setDate(exceedDate.getDate() + Math.floor(remainingQuota));
+      } else if (remainingQuota <= 0) {
+        exceedDate = new Date(start);
+      } else {
+        let daysFound = 0;
+        let cursor = new Date(start);
+        while (cursor <= end) {
+          const dateStr = formatLocalDate(cursor);
+          const isHol = isHoliday(dateStr, holidays);
+          const isWeekend = cursor.getDay() === 0 || cursor.getDay() === 6;
+
+          if (!isHol && !isWeekend) {
+            daysFound += 1;
+            if (daysFound >= remainingQuota) break;
+          }
+          cursor.setDate(cursor.getDate() + 1);
+        }
+
+        if (daysFound >= remainingQuota) {
+          cursor.setDate(cursor.getDate() + 1);
+          exceedDate = cursor;
+        }
+      }
+
+      if (exceedDate) {
+        const weight = isHalfDay ? 0.5 : 1;
+        let penaltyCursor = new Date(exceedDate);
+        while (penaltyCursor <= end) {
+          const dateStr = formatLocalDate(penaltyCursor);
+          const isHol = isHoliday(dateStr, holidays);
+          const isWeekend = penaltyCursor.getDay() === 0 || penaltyCursor.getDay() === 6;
+
+          if (rule.unit === 'calendar_days' || (!isHol && !isWeekend)) {
+            if (penaltyCursor >= monthStart && penaltyCursor <= monthEnd) {
+              deductionMap.set(dateStr, (deductionMap.get(dateStr) || 0) + weight);
+            }
+          }
+          penaltyCursor.setDate(penaltyCursor.getDate() + 1);
+        }
       }
     }
   }

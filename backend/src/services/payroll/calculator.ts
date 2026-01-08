@@ -300,51 +300,86 @@ function resolveWorkPeriods(
   }
   // trust DB ordering (effective_date, created_at) to keep stable swaps in same day
 
+  const exitTypes = new Set(['RESIGN', 'RETIRE', 'DEATH', 'TRANSFER_OUT']);
+  const swapTypes = new Set(['RESIGN', 'TRANSFER_OUT']);
+  const studyRemark = 'ลาศึกษาต่อ';
+  const prevMovements = relevant.filter((m) => new Date(m.effective_date) < monthStart);
+  const monthlyMovements = relevant.filter((m) => {
+    const date = new Date(m.effective_date);
+    return date >= monthStart && date <= monthEnd;
+  });
+
   let remark = '';
   let active = false;
 
-  for (const mov of relevant) {
-    const date = new Date(mov.effective_date);
-    if (date < monthStart) {
-      if (mov.movement_type === 'ENTRY') active = true;
-      else if (mov.movement_type === 'STUDY') {
-        active = false;
-        remark = 'ลาศึกษาต่อ';
-      } else if (['RESIGN', 'RETIRE', 'DEATH', 'TRANSFER_OUT'].includes(mov.movement_type)) {
-        active = false;
-      }
+  for (const mov of prevMovements) {
+    if (mov.movement_type === 'ENTRY') active = true;
+    else if (mov.movement_type === 'STUDY') {
+      active = false;
+      remark = studyRemark;
+    } else if (exitTypes.has(mov.movement_type)) {
+      active = false;
     }
   }
 
   const periods: WorkPeriod[] = [];
   let currentStart: Date | null = active ? new Date(monthStart) : null;
+  let prevMovement: MovementRow | null = null;
+  if (prevMovements.length > 0) {
+    prevMovement = prevMovements[prevMovements.length - 1];
+  }
 
-  for (const mov of relevant) {
+  for (const mov of monthlyMovements) {
     const date = new Date(mov.effective_date);
-    if (date < monthStart || date > monthEnd) continue;
 
     if (mov.movement_type === 'STUDY') {
+      if (active && currentStart) {
+        const end = makeLocalDate(date.getFullYear(), date.getMonth(), date.getDate() - 1);
+        if (end >= currentStart) {
+          periods.push({ start: currentStart, end });
+        }
+      }
       active = false;
       currentStart = null;
-      remark = 'ลาศึกษาต่อ';
-      break;
+      remark = studyRemark;
+      prevMovement = mov;
+      continue;
     }
 
     if (mov.movement_type === 'ENTRY') {
-      if (!active) {
-        active = true;
-        currentStart = date < monthStart ? new Date(monthStart) : date;
+      let isSwap = false;
+      if (prevMovement) {
+        const prevDate = new Date(prevMovement.effective_date);
+        const diffMs =
+          makeLocalDate(date.getFullYear(), date.getMonth(), date.getDate()).getTime() -
+          makeLocalDate(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate()).getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        if (swapTypes.has(prevMovement.movement_type) && diffDays <= 1) {
+          isSwap = true;
+          if (periods.length > 0) {
+            const lastPeriod = periods.pop();
+            currentStart = lastPeriod?.start ?? currentStart ?? date;
+          }
+        }
       }
-    } else if (['RESIGN', 'RETIRE', 'DEATH', 'TRANSFER_OUT'].includes(mov.movement_type)) {
+
+      if (!active || isSwap) {
+        active = true;
+        if (!isSwap) currentStart = date < monthStart ? new Date(monthStart) : date;
+        else if (!currentStart) currentStart = date;
+      }
+    } else if (exitTypes.has(mov.movement_type)) {
       if (active && currentStart) {
         const end = makeLocalDate(date.getFullYear(), date.getMonth(), date.getDate() - 1);
-        if (end >= monthStart) {
+        if (end >= currentStart) {
           periods.push({ start: currentStart, end: end > monthEnd ? monthEnd : end });
         }
       }
       active = false;
       currentStart = null;
     }
+
+    prevMovement = mov;
   }
 
   if (active && currentStart) {
