@@ -1,4 +1,4 @@
-# PHTS Backend - Authentication API
+# PHTS Backend API
 
 Backend API server for the PHTS (Public Health Talent System) built with Express, TypeScript, and Passport.js JWT authentication.
 
@@ -7,24 +7,24 @@ Backend API server for the PHTS (Public Health Talent System) built with Express
 ```
 backend/
 ├── src/
-│   ├── config/           # Configuration files
-│   │   ├── database.ts   # MySQL connection pool
-│   │   └── passport.ts   # Passport JWT strategy
-│   ├── controllers/      # Request handlers
-│   │   └── authController.ts
-│   ├── middlewares/      # Express middlewares
-│   │   └── authMiddleware.ts
-│   ├── routes/          # API route definitions
-│   │   └── authRoutes.ts
-│   ├── types/           # TypeScript type definitions
-│   │   ├── auth.ts      # Authentication types
-│   │   └── express.d.ts # Express type extensions
-│   ├── scripts/         # Utility scripts
-│   │   ├── seed_users.ts
-│   │   ├── create_test_user.ts
-│   │   └── create_inactive_user.ts
-│   └── index.ts         # Main server entry point
-├── .env                 # Environment variables
+│   ├── config/              # Configuration files (DB, passport, redis, upload)
+│   ├── middlewares/         # Express middlewares
+│   ├── modules/             # Feature-based modules
+│   │   ├── admin/           # System + officer management
+│   │   ├── auth/            # Authentication
+│   │   ├── notification/    # Notifications
+│   │   ├── payroll/         # Payroll domain
+│   │   │   └── core/        # Payroll calculation engine
+│   │   ├── report/          # Report generation
+│   │   ├── request/         # Request workflow
+│   │   └── signature/       # Signature management
+│   ├── services/            # Shared services (sync)
+│   ├── types/               # TypeScript type definitions
+│   ├── utils/               # Shared helpers
+│   ├── validators/          # Request validators
+│   ├── scripts/             # Utility scripts
+│   └── index.ts             # Main server entry point
+├── .env                     # Environment variables
 ├── package.json
 └── tsconfig.json
 ```
@@ -41,24 +41,22 @@ backend/
 
 ## Environment Variables
 
-The `.env` file contains the following configuration:
+Set the following variables in `.env`:
 
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=krtn@1234
-DB_NAME=phts_system
-
-# JWT Configuration
-JWT_SECRET=awWMaGRhgdfomgpgVCZuEL7Hs2xxRzWeUNd0k9Ucqa-knSgU06Awe65YbmPhhWdru5BTM2KMV0pidGuQVy7PFA
-JWT_EXPIRES_IN=24h
-
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-```
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `PORT`
+- `NODE_ENV`
+- `FRONTEND_URL`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_PASSWORD`
+- `REDIS_DB`
 
 ## Installation
 
@@ -66,9 +64,9 @@ NODE_ENV=development
 # Install dependencies
 npm install
 
-# Create test users (optional)
-npm run seed:users           # Seed from HRMS employees view
-npx tsx src/scripts/create_test_user.ts  # Create admin test user
+# Optional helpers
+npx tsx src/scripts/setup_database.ts
+npx tsx src/scripts/create_local_admin.ts
 ```
 
 ## Running the Server
@@ -413,4 +411,4 @@ For issues or questions, contact the PHTS Development Team.
 
 ---
 
-Last Updated: 2025-12-30
+Last Updated: 2026-01-09
