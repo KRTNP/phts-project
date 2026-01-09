@@ -16,13 +16,32 @@ const toNull = (val: any) => (val === undefined ? null : val);
 const isBcryptHash = (str: string): boolean =>
   /^\$2[axy]\$[0-9]{2}\$[A-Za-z0-9./]{53}$/.test(str);
 
+const toDateOnly = (value: any): string | null => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = `${value.getMonth() + 1}`.padStart(2, '0');
+    const day = `${value.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const year = parsed.getFullYear();
+  const month = `${parsed.getMonth() + 1}`.padStart(2, '0');
+  const day = `${parsed.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Detect value change with support for dates and nullish values.
 const isChanged = (oldVal: any, newVal: any) => {
-  if (oldVal instanceof Date && newVal) {
-    return (
-      oldVal.toISOString().split('T')[0] !==
-      new Date(newVal).toISOString().split('T')[0]
-    );
+  const oldDate = toDateOnly(oldVal);
+  const newDate = toDateOnly(newVal);
+  if (oldDate || newDate) {
+    return oldDate !== newDate;
   }
   if (typeof oldVal === 'number' && typeof newVal === 'string') {
     return oldVal !== parseFloat(newVal);
@@ -400,10 +419,15 @@ export class SyncService {
       // 6. Movements
       console.log('[SyncService] Processing movements...');
       await conn.query(`
-        INSERT IGNORE INTO pts_employee_movements (citizen_id, movement_type, effective_date, remark, synced_at)
+        INSERT INTO pts_employee_movements (citizen_id, movement_type, effective_date, remark, synced_at)
         SELECT m.citizen_id, m.movement_type, m.effective_date, m.remark, NOW()
         FROM employee_movements m
         JOIN users u ON CONVERT(m.citizen_id USING utf8mb4) COLLATE utf8mb4_unicode_ci = u.citizen_id
+        ON DUPLICATE KEY UPDATE
+          movement_type = VALUES(movement_type),
+          effective_date = VALUES(effective_date),
+          remark = VALUES(remark),
+          synced_at = NOW()
       `);
 
       await conn.commit();

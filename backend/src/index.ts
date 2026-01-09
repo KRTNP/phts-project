@@ -13,13 +13,13 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { testConnection, closePool } from './config/database.js';
 import { initializePassport } from './config/passport.js';
-import authRoutes from './routes/authRoutes.js';
-import requestRoutes from './routes/requestRoutes.js';
-import signatureRoutes from './routes/signatureRoutes.js';
-import payrollRoutes from './routes/payrollRoutes.js';
-import reportRoutes from './routes/reportRoutes.js';
-import systemRoutes from './routes/systemRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import requestRoutes from './modules/request/request.routes.js';
+import signatureRoutes from './modules/signature/signature.routes.js';
+import payrollRoutes from './modules/payroll/payroll.routes.js';
+import reportRoutes from './modules/report/report.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
+import notificationRoutes from './modules/notification/notification.routes.js';
 import { ApiResponse } from './types/auth.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 
@@ -107,8 +107,8 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/signatures', signatureRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/system', systemRoutes);
-app.use('/api/management', systemRoutes);
+app.use('/api/system', adminRoutes);
+app.use('/api/management', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 /**
