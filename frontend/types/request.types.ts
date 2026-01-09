@@ -111,6 +111,8 @@ export const WORK_ATTRIBUTE_LABELS = {
   service: 'บริการ',
 };
 
+export type SubmissionData = Record<string, unknown>;
+
 /**
  * Base request
  */
@@ -132,7 +134,7 @@ export interface PTSRequest {
 
   status: RequestStatus;
   current_step: number;
-  submission_data: any;
+  submission_data: SubmissionData | null;
 
   created_at: Date | string;
   updated_at: Date | string;

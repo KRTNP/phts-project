@@ -20,6 +20,29 @@ export const getPeriodStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const listPeriods = async (_req: Request, res: Response) => {
+  try {
+    const periods = await PayrollService.getAllPeriods();
+    res.json(periods);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getPeriodPayouts = async (req: Request, res: Response) => {
+  try {
+    const { periodId } = req.params;
+    if (!periodId) {
+      res.status(400).json({ message: 'periodId is required' });
+      return;
+    }
+    const payouts = await PayrollService.getPeriodPayouts(Number(periodId));
+    res.json({ success: true, data: payouts });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export const calculatePeriod = async (req: Request, res: Response) => {
   try {
     const { periodId } = req.params;
@@ -36,21 +59,33 @@ export const calculateOnDemand = async (req: Request, res: Response<ApiResponse>
   try {
     const { year, month, citizen_id } = req.body;
 
-    if (!year || !month || !citizen_id) {
+    if (!year || !month) {
       res.status(400).json({
         success: false,
-        error: 'year, month, and citizen_id are required',
+        error: 'year and month are required',
       });
       return;
     }
 
-    const data = await PayrollService.calculateOnDemand(
-      Number(year),
-      Number(month),
-      String(citizen_id),
-    );
+    if (citizen_id) {
+      const data = await PayrollService.calculateOnDemand(
+        Number(year),
+        Number(month),
+        String(citizen_id),
+      );
+      res.json({ success: true, data });
+      return;
+    }
 
-    res.json({ success: true, data });
+    const period = await PayrollService.getOrCreatePeriod(Number(year), Number(month));
+    const result = await PayrollService.processPeriodCalculation(Number(period.period_id));
+    res.json({
+      success: true,
+      data: {
+        period_id: period.period_id,
+        ...result,
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

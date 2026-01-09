@@ -4,16 +4,31 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Box, Tab, Tabs, Typography } from '@mui/material';
 import ApproverDashboard from '@/components/requests/ApproverDashboard';
 import ApprovalHistoryList from '@/components/requests/ApprovalHistoryList';
 import PayrollManager from '@/components/payroll/PayrollManager';
 import { VerifiedUser, Paid, History } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
+import { AuthService } from '@/lib/api/authApi';
+import { ROLE_ROUTES, UserRole } from '@/types/auth';
 
 export default function OfficerDashboard() {
+  const router = useRouter();
   const [currentTab, setCurrentTab] = useState(0);
+
+  useEffect(() => {
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser) {
+      router.replace('/login');
+      return;
+    }
+    if (currentUser.role !== UserRole.PTS_OFFICER) {
+      router.replace(ROLE_ROUTES[currentUser.role] || '/login');
+    }
+  }, [router]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);

@@ -66,7 +66,7 @@ export default function UserDashboard() {
       });
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'ไม่สามารถดึงข้อมูลคำขอได้');
+      setError(err.message || 'ไม่สามารถเรียกดูข้อมูลคำขอได้');
     } finally {
       setLoading(false);
     }

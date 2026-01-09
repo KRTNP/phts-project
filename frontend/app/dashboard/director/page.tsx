@@ -6,6 +6,8 @@ import { Box, Tab, Tabs, Typography } from '@mui/material';
 import ApproverDashboard from '@/components/requests/ApproverDashboard';
 import ApprovalHistoryList from '@/components/requests/ApprovalHistoryList';
 import { Assignment, History } from '@mui/icons-material';
+import PayrollApprovalPanel from '@/components/payroll/PayrollApprovalPanel';
+import * as payrollApi from '@/lib/api/payrollApi';
 
 export default function DirectorDashboard() {
   const [currentTab, setCurrentTab] = useState(0);
@@ -24,6 +26,14 @@ export default function DirectorDashboard() {
           ตรวจสอบและอนุมัติคำขอรับเงิน พ.ต.ส. (รองรับการอนุมัติแบบกลุ่ม)
         </Typography>
       </Box>
+
+      <PayrollApprovalPanel
+        requiredStatus="WAITING_DIRECTOR"
+        title="Payroll Approval (Director)"
+        approveLabel="Approve Period (Director)"
+        onApprove={payrollApi.approvePeriodByDirector}
+        onReject={payrollApi.rejectPeriod}
+      />
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={currentTab} onChange={handleTabChange} aria-label="director tabs">

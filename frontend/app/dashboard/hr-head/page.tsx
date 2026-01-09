@@ -12,6 +12,8 @@ import { Box, Tab, Tabs, Typography } from '@mui/material';
 import ApproverDashboard from '@/components/requests/ApproverDashboard';
 import ApprovalHistoryList from '@/components/requests/ApprovalHistoryList';
 import { Assignment, History } from '@mui/icons-material';
+import PayrollApprovalPanel from '@/components/payroll/PayrollApprovalPanel';
+import * as payrollApi from '@/lib/api/payrollApi';
 
 export default function HRHeadDashboard() {
   const [currentTab, setCurrentTab] = useState(0);
@@ -30,6 +32,14 @@ export default function HRHeadDashboard() {
           ตรวจสอบและอนุมัติคำขอรับเงิน พ.ต.ส. (Step 3)
         </Typography>
       </Box>
+
+      <PayrollApprovalPanel
+        requiredStatus="WAITING_HR"
+        title="Payroll Approval (HR)"
+        approveLabel="Approve Period (HR)"
+        onApprove={payrollApi.approvePeriodByHR}
+        onReject={payrollApi.rejectPeriod}
+      />
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={currentTab} onChange={handleTabChange} aria-label="hr head tabs">

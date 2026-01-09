@@ -29,6 +29,8 @@ import { Search, Visibility } from '@mui/icons-material';
 import StatusChip from '@/components/common/StatusChip';
 import { useRouter } from 'next/navigation';
 import { getApprovalHistory } from '@/lib/api/requestApi';
+import { AuthService } from '@/lib/api/authApi';
+import { ROLE_ROUTES, UserRole } from '@/types/auth';
 
 type HistoryRow = {
   request_id: number;
@@ -52,6 +54,7 @@ export default function ApprovalHistoryList() {
   const [data, setData] = useState<HistoryRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<(typeof STATUS_FILTERS)[number]>('ALL');
+  const [detailBasePath, setDetailBasePath] = useState('/dashboard/approver');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -65,6 +68,17 @@ export default function ApprovalHistoryList() {
         setLoading(false);
       }
     };
+
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser?.role === UserRole.PTS_OFFICER) {
+      setDetailBasePath('/dashboard/officer');
+    } else if (currentUser?.role === UserRole.HEAD_HR) {
+      setDetailBasePath('/dashboard/hr-head');
+    } else if (currentUser?.role === UserRole.HEAD_DEPT) {
+      setDetailBasePath('/dashboard/approver');
+    } else if (currentUser?.role) {
+      setDetailBasePath(ROLE_ROUTES[currentUser.role] || '/dashboard/approver');
+    }
 
     fetchHistory();
   }, []);
@@ -172,7 +186,7 @@ export default function ApprovalHistoryList() {
                         size="small"
                         color="primary"
                         onClick={() =>
-                          router.push(`/dashboard/approver/requests/${row.request_id}`)
+                          router.push(`${detailBasePath}/requests/${row.request_id}`)
                         }
                       >
                         <Visibility fontSize="small" />

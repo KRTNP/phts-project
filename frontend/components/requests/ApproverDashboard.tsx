@@ -37,6 +37,8 @@ import { useRouter } from 'next/navigation';
 import { alpha, useTheme } from '@mui/material/styles';
 import * as requestApi from '@/lib/api/requestApi';
 import { RequestWithDetails } from '@/types/request.types';
+import { AuthService } from '@/lib/api/authApi';
+import { ROLE_ROUTES, UserRole } from '@/types/auth';
 import StatCard from '@/components/dashboard/StatCard';
 
 interface ApproverDashboardProps {
@@ -49,6 +51,7 @@ export default function ApproverDashboard({ allowBatch = false }: ApproverDashbo
   const [requests, setRequests] = useState<RequestWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [detailBasePath, setDetailBasePath] = useState('/dashboard/approver');
 
   // State สำหรับ Batch Approval
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -57,6 +60,16 @@ export default function ApproverDashboard({ allowBatch = false }: ApproverDashbo
   const [processingBatch, setProcessingBatch] = useState(false);
 
   useEffect(() => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser?.role === UserRole.PTS_OFFICER) {
+      setDetailBasePath('/dashboard/officer');
+    } else if (currentUser?.role === UserRole.HEAD_HR) {
+      setDetailBasePath('/dashboard/hr-head');
+    } else if (currentUser?.role === UserRole.HEAD_DEPT) {
+      setDetailBasePath('/dashboard/approver');
+    } else if (currentUser?.role) {
+      setDetailBasePath(ROLE_ROUTES[currentUser.role] || '/dashboard/approver');
+    }
     loadData();
   }, []);
 
@@ -249,7 +262,7 @@ export default function ApproverDashboard({ allowBatch = false }: ApproverDashbo
                       <TableCell align="center">
                         <Tooltip title="ตรวจสอบและอนุมัติ">
                           <IconButton
-                            onClick={() => router.push(`/dashboard/approver/requests/${req.request_id}`)}
+                            onClick={() => router.push(`${detailBasePath}/requests/${req.request_id}`)}
                             sx={{
                               color: 'primary.main',
                               bgcolor: alpha(theme.palette.primary.main, 0.1),

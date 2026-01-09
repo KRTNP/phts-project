@@ -27,6 +27,8 @@ import { RequestWithDetails, PERSONNEL_TYPE_LABELS, REQUEST_TYPE_LABELS, WORK_AT
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import ApprovalDialog from '@/components/requests/ApprovalDialog';
+import { AuthService } from '@/lib/api/authApi';
+import { ROLE_ROUTES, UserRole } from '@/types/auth';
 
 export default function OfficerRequestDetailPage() {
   const params = useParams();
@@ -56,8 +58,17 @@ export default function OfficerRequestDetailPage() {
         setLoading(false);
       }
     };
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser) {
+      router.replace('/login');
+      return;
+    }
+    if (currentUser.role !== UserRole.PTS_OFFICER) {
+      router.replace(ROLE_ROUTES[currentUser.role] || '/login');
+      return;
+    }
     if (requestId) fetchRequest();
-  }, [requestId]);
+  }, [requestId, router]);
 
   const handleAction = (action: 'APPROVE' | 'REJECT' | 'RETURN') => {
     setCurrentAction(action);

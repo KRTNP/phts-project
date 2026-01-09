@@ -515,7 +515,15 @@ export async function getRequestById(
   const isAdmin = userRole === 'ADMIN';
 
   if (!isOwner && !isApprover && !isAdmin) {
-    throw new Error('You do not have permission to view this request');
+    const actionRows = await query<RowDataPacket[]>(
+      'SELECT 1 FROM pts_request_actions WHERE request_id = ? AND actor_id = ? LIMIT 1',
+      [requestId, userId],
+    );
+    const isActor = actionRows.length > 0;
+
+    if (!isActor) {
+      throw new Error('You do not have permission to view this request');
+    }
   }
 
   const details = await getRequestDetails(requestId);

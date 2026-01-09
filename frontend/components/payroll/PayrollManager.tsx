@@ -19,8 +19,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  IconButton,
-  Tooltip,
   Paper,
 } from '@mui/material';
 import {
@@ -29,67 +27,10 @@ import {
   Send,
   LockOpen,
   DateRange,
-  Save,
-  WarningAmber,
-  Edit,
 } from '@mui/icons-material';
 import { useTheme, alpha } from '@mui/material/styles';
 import * as payrollApi from '@/lib/api/payrollApi';
 import StatCard from '@/components/dashboard/StatCard';
-
-// Mock data for payroll details
-const mockPayrollData = [
-  {
-    id: 1,
-    name: 'นายวรวุฒิ เพ็ชรยัง',
-    position: 'นักเทคนิคการแพทย์',
-    license_exp: '2025-10-14',
-    days: 30,
-    rate: 1000,
-    total: 1000,
-    note: '',
-  },
-  {
-    id: 2,
-    name: 'นางสาวพรรณารักษ์ มีอาหาร',
-    position: 'นักเทคนิคการแพทย์',
-    license_exp: '2023-10-15',
-    days: 15,
-    rate: 1000,
-    total: 500,
-    note: 'ใบประกอบหมดอายุ 15 ต.ค.',
-  },
-  {
-    id: 3,
-    name: 'นางสาวกชนันทน์ เพ็ชรราช',
-    position: 'นายแพทย์',
-    license_exp: '2026-05-19',
-    days: 0,
-    rate: 5000,
-    total: 0,
-    note: 'ลาศึกษาต่อ',
-  },
-  {
-    id: 4,
-    name: 'นายสมชาย ใจดี',
-    position: 'พยาบาลวิชาชีพ',
-    license_exp: '2027-03-20',
-    days: 30,
-    rate: 1500,
-    total: 1500,
-    note: '',
-  },
-  {
-    id: 5,
-    name: 'นางสมศรี รักษา',
-    position: 'เภสัชกร',
-    license_exp: '2026-12-15',
-    days: 28,
-    rate: 2000,
-    total: 1867,
-    note: 'ลาป่วย 2 วัน',
-  },
-];
 
 export default function PayrollManager() {
   const theme = useTheme();
@@ -97,59 +38,74 @@ export default function PayrollManager() {
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [payrollData, setPayrollData] = useState(mockPayrollData);
+  const [payrollData, setPayrollData] = useState<payrollApi.PayrollPayout[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadCurrentPeriod();
   }, []);
 
-  const loadCurrentPeriod = async () => {
+  const loadCurrentPeriod = async (showRefresh = false) => {
     try {
-      setLoading(true);
-      // Mock API call (production: payrollApi.getCurrentPeriod())
-      setTimeout(() => {
-        setCurrentPeriod({
-          period_id: 202501,
-          month: 1,
-          year: 2025,
-          status: 'OPEN', // OPEN, CALCULATING, VERIFYING, CLOSED
-          total_employees: 150,
-          total_amount: 450000,
-          retroactive_amount: 12500,
-          last_calculated: '2025-01-25T10:00:00',
-        });
-        setLoading(false);
-      }, 1000);
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      const period = await payrollApi.getCurrentPeriod();
+      setCurrentPeriod({
+        ...period,
+        total_employees: period.total_headcount ?? 0,
+        retroactive_amount: 0,
+        last_calculated: null,
+      });
+      if (period?.period_id) {
+        const payouts = await payrollApi.getPeriodPayouts(period.period_id);
+        setPayrollData(payouts);
+      } else {
+        setPayrollData([]);
+      }
+      setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);
     }
+    if (showRefresh) {
+      setRefreshing(false);
+    }
   };
 
   const handleCalculate = async () => {
-    setCalculating(true);
-    setProgress(0);
-
-    // Simulate Calculation Process
-    const interval = setInterval(() => {
-      setProgress((oldProgress) => {
-        if (oldProgress === 100) {
-          clearInterval(interval);
-          setCalculating(false);
-          loadCurrentPeriod(); // Reload data
-          return 100;
-        }
-        return Math.min(oldProgress + 10, 100);
-      });
-    }, 500);
-
-    // Production: await payrollApi.calculateMonthly(currentPeriod.period_id);
+    if (!currentPeriod?.year || !currentPeriod?.month) return;
+    try {
+      setCalculating(true);
+      setProgress(10);
+      if (currentPeriod?.period_id) {
+        await payrollApi.calculatePeriod(currentPeriod.period_id);
+      } else {
+        await payrollApi.calculateMonthly(currentPeriod.year, currentPeriod.month);
+      }
+      setProgress(100);
+      await loadCurrentPeriod(true);
+    } catch (error) {
+      console.error(error);
+      alert('ไม่สามารถคำนวณเงินเดือนได้');
+    } finally {
+      setCalculating(false);
+    }
   };
 
   const handleClosePeriod = async () => {
     if (!confirm('ยืนยันการปิดงวดและส่งต่อให้ HR ตรวจสอบ?')) return;
-    // Production: await payrollApi.submitPeriod(currentPeriod.period_id);
-    alert('ส่งข้อมูลให้ HR เรียบร้อยแล้ว');
+    if (!currentPeriod?.period_id) return;
+    try {
+      await payrollApi.submitPeriod(currentPeriod.period_id);
+      alert('ส่งข้อมูลให้ HR เรียบร้อยแล้ว');
+      await loadCurrentPeriod(true);
+    } catch (error) {
+      console.error(error);
+      alert('ไม่สามารถส่งงวดเดือนไปอนุมัติได้');
+    }
   };
 
   if (loading) return <LinearProgress />;
@@ -315,7 +271,9 @@ export default function PayrollManager() {
                       ประมวลผลล่าสุด:
                     </Typography>
                     <Typography variant="body2">
-                      {new Date(currentPeriod?.last_calculated).toLocaleString('th-TH')}
+                      {currentPeriod?.last_calculated
+                        ? new Date(currentPeriod.last_calculated).toLocaleString('th-TH')
+                        : '-'}
                     </Typography>
                   </Box>
                 </Stack>
@@ -351,12 +309,22 @@ export default function PayrollManager() {
                 ตรวจสอบและแก้ไขยอดเงินของแต่ละคนก่อนส่งอนุมัติ
               </Typography>
             </Box>
-            <Chip
-              label={`${payrollData.length} คน`}
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Chip
+                label={`${payrollData.length} คน`}
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => loadCurrentPeriod(true)}
+                disabled={refreshing}
+              >
+                รีเฟรชรายการ
+              </Button>
+            </Stack>
           </Stack>
 
           <TableContainer
@@ -375,13 +343,13 @@ export default function PayrollManager() {
                   <TableCell
                     sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.05) }}
                   >
-                    ใบประกอบฯ หมดอายุ
+                    วันทำงาน
                   </TableCell>
                   <TableCell
                     align="center"
                     sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.05) }}
                   >
-                    วันทำงาน
+                    หักวันลา
                   </TableCell>
                   <TableCell
                     align="right"
@@ -404,25 +372,20 @@ export default function PayrollManager() {
                   >
                     หมายเหตุ
                   </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{ fontWeight: 700, bgcolor: alpha(theme.palette.primary.main, 0.05) }}
-                  >
-                    แก้ไข
-                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {payrollData.map((row) => {
-                  const isExpired = new Date(row.license_exp) < new Date();
-                  const isPartialDays = row.days < 30;
-                  const rowBgColor = isPartialDays
+                  const eligibleDays = Number(row.eligible_days ?? 0);
+                  const deductedDays = Number(row.deducted_days ?? 0);
+                  const rowBgColor = deductedDays > 0
                     ? alpha(theme.palette.warning.main, 0.08)
                     : 'inherit';
+                  const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim() || row.citizen_id;
 
                   return (
                     <TableRow
-                      key={row.id}
+                      key={row.payout_id}
                       sx={{
                         bgcolor: rowBgColor,
                         '&:hover': { bgcolor: alpha(theme.palette.action.hover, 0.1) },
@@ -430,77 +393,46 @@ export default function PayrollManager() {
                     >
                       <TableCell>
                         <Typography variant="body2" fontWeight={600}>
-                          {row.name}
+                          {fullName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {row.position}
+                          {row.position_name || '-'}
                         </Typography>
                       </TableCell>
 
                       <TableCell>
-                        {isExpired ? (
-                          <Chip
-                            icon={<WarningAmber />}
-                            label={row.license_exp}
-                            color="error"
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontSize: '0.75rem' }}
-                          />
-                        ) : (
-                          <Typography variant="body2">{row.license_exp}</Typography>
-                        )}
+                        <Typography variant="body2">{eligibleDays.toFixed(2)}</Typography>
                       </TableCell>
 
                       <TableCell align="center">
-                        <TextField
-                          defaultValue={row.days}
-                          size="small"
-                          type="number"
-                          slotProps={{
-                            htmlInput: { min: 0, max: 31, style: { textAlign: 'center' } },
-                          }}
-                          sx={{
-                            width: 70,
-                            '& .MuiOutlinedInput-root': {
-                              bgcolor: 'background.paper',
-                            },
-                          }}
-                        />
+                        <Typography variant="body2">{deductedDays.toFixed(2)}</Typography>
                       </TableCell>
 
                       <TableCell align="right">
                         <Typography variant="body2" color="text.secondary">
-                          {row.rate.toLocaleString()}
+                          {Number(row.rate || 0).toLocaleString()}
                         </Typography>
                       </TableCell>
 
                       <TableCell align="right">
                         <Typography variant="body2" fontWeight={700} color="primary.main">
-                          {row.total.toLocaleString()}
+                          {Number(row.total_payable || 0).toLocaleString()}
                         </Typography>
                       </TableCell>
 
                       <TableCell>
                         <TextField
-                          defaultValue={row.note}
+                          defaultValue={row.remark || ''}
                           size="small"
                           fullWidth
                           placeholder="ระบุเหตุผล (เช่น ลาเรียน, ย้าย)"
+                          InputProps={{ readOnly: true }}
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               bgcolor: 'background.paper',
                             },
                           }}
                         />
-                      </TableCell>
-
-                      <TableCell align="center">
-                        <Tooltip title="บันทึกการแก้ไข">
-                          <IconButton color="primary" size="small">
-                            <Save fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   );
@@ -525,7 +457,9 @@ export default function PayrollManager() {
                   ยอดรวมที่คำนวณได้
                 </Typography>
                 <Typography variant="h6" fontWeight={700} color="info.main">
-                  {payrollData.reduce((sum, row) => sum + row.total, 0).toLocaleString()} บาท
+                  {payrollData
+                    .reduce((sum, row) => sum + Number(row.total_payable || 0), 0)
+                    .toLocaleString()} บาท
                 </Typography>
               </Box>
               <Box>
@@ -538,10 +472,10 @@ export default function PayrollManager() {
               </Box>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  บุคลากรที่ทำงานไม่ครบ 30 วัน
+                  บุคลากรที่มีการหักวันลา
                 </Typography>
                 <Typography variant="h6" fontWeight={700} color="warning.main">
-                  {payrollData.filter((r) => r.days < 30).length} คน
+                  {payrollData.filter((r) => Number(r.deducted_days || 0) > 0).length} คน
                 </Typography>
               </Box>
             </Stack>

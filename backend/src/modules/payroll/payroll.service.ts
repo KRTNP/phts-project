@@ -231,6 +231,43 @@ export class PayrollService {
   }
 
   /**
+   * List all periods (newest first).
+   */
+  static async getAllPeriods(): Promise<PeriodSummary[]> {
+    const [rows] = await db.query<RowDataPacket[]>(
+      'SELECT * FROM pts_periods ORDER BY period_year DESC, period_month DESC',
+    );
+    return rows as PeriodSummary[];
+  }
+
+  /**
+   * List payouts for a specific period (for officer review UI).
+   */
+  static async getPeriodPayouts(periodId: number) {
+    const [rows] = await db.query<RowDataPacket[]>(
+      `
+      SELECT
+        p.payout_id,
+        p.citizen_id,
+        e.first_name,
+        e.last_name,
+        e.position_name,
+        p.eligible_days,
+        p.deducted_days,
+        p.pts_rate_snapshot as rate,
+        p.total_payable,
+        p.remark
+      FROM pts_payouts p
+      LEFT JOIN pts_employees e ON e.citizen_id = p.citizen_id
+      WHERE p.period_id = ?
+      ORDER BY e.first_name ASC, e.last_name ASC, p.citizen_id ASC
+      `,
+      [periodId],
+    );
+    return rows;
+  }
+
+  /**
    * On-demand calculation for a single employee (no persistence).
    */
   static async calculateOnDemand(year: number, month: number, citizenId: string) {

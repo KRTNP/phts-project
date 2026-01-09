@@ -113,7 +113,7 @@ export async function getMyRequests(): Promise<RequestWithDetails[]> {
 
     return response.data.data || [];
   } catch (error: unknown) {
-    throw new Error(extractErrorMessage(error, 'Unable to fetch requests'));
+    throw new Error(extractErrorMessage(error, 'ไม่สามารถเรียกดูข้อมูลคำขอได้'));
   }
 }
 

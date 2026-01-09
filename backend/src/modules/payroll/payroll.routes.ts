@@ -6,6 +6,8 @@ import {
   calculateOnDemand,
   calculatePeriod,
   getPeriodStatus,
+  getPeriodPayouts,
+  listPeriods,
   rejectPeriod,
   submitToHR,
 } from './payroll.controller.js';
@@ -16,6 +18,8 @@ const router = Router();
 
 // View period status (authenticated dashboard users)
 router.get('/period', protect, getPeriodStatus);
+router.get('/periods', protect, listPeriods);
+router.get('/period/:periodId/payouts', protect, getPeriodPayouts);
 
 // Ad-hoc calculation for a single employee (integration tests/tools)
 router.post(

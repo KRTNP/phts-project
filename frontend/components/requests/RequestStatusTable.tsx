@@ -86,7 +86,7 @@ export default function RequestStatusTable({ requests, loading = false }: Reques
           sx={{ p: 2, bgcolor: 'background.paper' }}
         >
           <Typography variant="h6" fontWeight={700}>
-            รายการล่าสุด
+            รายการคำขอ
           </Typography>
           <TextField
             size="small"
@@ -206,7 +206,7 @@ export default function RequestStatusTable({ requests, loading = false }: Reques
         sx={{ p: 2, bgcolor: 'background.paper' }}
       >
         <Typography variant="h6" fontWeight={700}>
-          รายการล่าสุด
+          รายการคำขอ
         </Typography>
         <TextField
           size="small"
