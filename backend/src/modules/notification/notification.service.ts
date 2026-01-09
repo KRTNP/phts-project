@@ -43,9 +43,10 @@ export class NotificationService {
   }
 
   static async getMyNotifications(userId: number, limit = 20) {
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
     return query(
-      `SELECT * FROM pts_notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`,
-      [userId, limit],
+      `SELECT * FROM pts_notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+      [userId],
     );
   }
 
